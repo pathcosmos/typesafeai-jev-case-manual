@@ -227,6 +227,12 @@ def check_python_file(p: Path, r: str, rep: Report, in_jev: bool, text: str, que
             if isinstance(node, ast.Call) and py_call_name(node) in ("TypeSafeClient", "AsyncTypeSafeClient"):
                 rep.hit("client_not_at_import", "fail", r, node.lineno,
                         "클라이언트를 import 시점에 만든다 (생성자가 API 키를 검증하므로 키 없는 CI에서 import가 실패한다). 지연 생성하거나 주입한다")
+    if in_jev:
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and py_call_name(node) == "system_one" \
+                    and not any(k.arg == "model" for k in node.keywords):
+                rep.hit("model_per_request", "warn", r, node.lineno,
+                        "system_one 호출에 model=가 없다. 주입된 클라이언트는 기본값(jev-latest)으로 요청한다. model=policy.MODEL을 넣는다")
     if in_jev and Path(r).stem == "decide":
         handled = False
         for node in ast.walk(tree):
@@ -286,6 +292,12 @@ def check_ts_file(p: Path, r: str, rep: Report, in_jev: bool, text: str, questio
                 if not keys & NO_MATCH_KEYS and NO_MATCH_WAIVER not in near:
                     rep.hit("choice_no_match", "warn", r, ln,
                             f"Choice에 no-match 선택지(other/none 등)가 없다: {sorted(keys)}. 목록이 모든 입력을 덮는다면 `// {NO_MATCH_WAIVER}` 주석을 단다")
+    if in_jev:
+        for m in re.finditer(r"\.systemOne\s*\(", text):
+            args = ts_call_args(text, m.end() - 1)
+            if args and not re.search(r"(^|[{,\s])model\s*[:,}]", ts_strip_comments(args[0])):
+                rep.hit("model_per_request", "warn", r, line_of(text, m.start()),
+                        "systemOne 요청에 model이 없다. 주입된 클라이언트는 기본값(jev-latest)으로 요청한다. model: POLICY.model을 넣는다")
     for m in re.finditer(r"\bnew\s+TypeSafeClient\s*\(", text):
         if depth[m.start()] == 0:
             rep.hit("client_not_at_import", "fail", r, line_of(text, m.start()),
@@ -319,6 +331,7 @@ def main(argv: list[str] | None = None) -> int:
     rep = Report()
     for cid, title in [
         ("model_pinned", "모델 버전 고정 (jev-latest / jev-preview 금지, policy에 jev-X.Y.Z)"),
+        ("model_per_request", "jev 모듈의 호출마다 model 지정 (주입된 클라이언트의 기본값으로 새지 않게)"),
         ("score_levels", "Score 레벨 2~10개, null 없음"),
         ("choice_no_match", "Choice에 no-match 선택지"),
         ("single_questions_module", "질문 정의가 한 모듈에 모여 있음"),

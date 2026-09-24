@@ -13,6 +13,14 @@ def default_client() -> TypeSafeClient:
         retry=RetryPolicy(max_retries=2, timeout=5.0),  # 재시도를 포함한 호출당 총 예산
     )
 
+def _request_id(r) -> str | None:
+    # SDK 0.7.1: x-typesafe-request-id 헤더가 없으면 속성 접근이 TypeSafeError를 던진다 (로그용 값이므로 None으로 둔다)
+    try:
+        return r.request_id
+    except TypeSafeError:
+        return None
+
+
 @dataclass
 class Decision:
     route: str                      # "billing" | "orders" | "human_review" | "fallback"
@@ -26,12 +34,13 @@ def decide(ticket: dict, client: TypeSafeClient | None = None) -> Decision:
         return Decision(route="human_review")
     state = {"ticket": {"message": ticket["message"]}}  # 필요한 필드만 넣는다
     try:
-        r = (client or default_client()).system_one(state=state, questions=QUESTIONS)
+        # 모델은 요청마다 넣는다: 주입된 클라이언트의 기본값(jev-latest)으로 새지 않게 한다
+        r = (client or default_client()).system_one(state=state, questions=QUESTIONS, model=policy.MODEL)
     except TypeSafeError:                               # API, 연결, 타임아웃, 응답 검증 오류의 공통 기반 클래스
         return Decision(route="fallback")               # 규칙 / 큐 / 다른 모델로 넘긴다
 
     topic = r.choices["topic"]
-    d = Decision(route="human_review", model=r.model, request_id=r.request_id,
+    d = Decision(route="human_review", model=r.model, request_id=_request_id(r),
                  raw={k: a.model_dump() for k, a in r.answers.items()})
     if topic.choice == "other" or topic.confidence < policy.TOPIC_MIN_CONFIDENCE:
         return d

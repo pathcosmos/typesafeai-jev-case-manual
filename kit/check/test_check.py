@@ -99,8 +99,13 @@ class PythonScaffold(Base):
         self.assertEqual(status(run_check(self.root)[1], "single_questions_module"), "fail")
 
     def test_missing_fallback_warns(self):
-        self.edit("jev/decide.py", "except TypeSafeError:", "except ValueError:")
+        text = (self.root / "jev/decide.py").read_text(encoding="utf-8")
+        (self.root / "jev/decide.py").write_text(text.replace("except TypeSafeError:", "except ValueError:"), encoding="utf-8")
         self.assertEqual(status(run_check(self.root)[1], "fallback_on_error"), "warn")
+
+    def test_model_not_per_request_warns(self):
+        self.edit("jev/decide.py", ", model=policy.MODEL)", ")")
+        self.assertEqual(status(run_check(self.root)[1], "model_per_request"), "warn")
 
     def test_no_jev_dir_reports_error(self):
         shutil.rmtree(self.root / "jev")
@@ -165,6 +170,10 @@ class TsScaffold(Base):
     def test_untagged_threshold_fails(self):
         self.edit("jev/policy.ts", "// [잠정] refund_requested.noul", "// refund_requested.noul")
         self.assertEqual(status(run_check(self.root)[1], "threshold_tags"), "fail")
+
+    def test_model_not_per_request_warns(self):
+        self.edit("jev/decide.ts", ", model: POLICY.model }", " }")
+        self.assertEqual(status(run_check(self.root)[1], "model_per_request"), "warn")
 
     def test_missing_fallback_warns(self):
         self.edit("jev/decide.ts", "if (e instanceof TypeSafeError) return { route: \"fallback\" };", "")

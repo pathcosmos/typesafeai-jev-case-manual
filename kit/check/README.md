@@ -8,13 +8,14 @@ python3 kit/check/check.py <target-dir> [--jev-dir <path>]... > .jev/check.json
 - 표준 라이브러리만 쓴다. 대상 프로젝트를 수정하지 않는다. 테스트 파일은 검사에서 제외한다.
 - `--jev-dir`를 생략하면 `policy.*`와 `questions.*`가 함께 있는 `jev/` 디렉터리를 모두 찾는다 (모노레포 지원).
 - **종료 코드**: `0` fail 없음 (warn은 허용) · `1` fail 있음 · `2` 검사 불가 (jev 디렉터리를 찾지 못함)
-- 테스트: `python3 -m unittest kit/check/test_check.py -v`. scaffold는 통과하고, 일부러 깨뜨린 변형 17가지는 해당 검사에 걸린다.
+- 테스트: `python3 -m unittest kit/check/test_check.py -v`. scaffold는 통과하고, 일부러 깨뜨린 변형 19가지는 해당 검사에 걸린다.
 
 ## 검사 항목
 
 | id | fail 조건 | warn 조건 |
 | --- | --- | --- |
 | `model_pinned` | 테스트가 아닌 코드에 `"jev-latest"`나 `"jev-preview"`가 있다. policy에 고정 버전이 없다 | — |
+| `model_per_request` | — | jev 모듈의 `system_one` / `systemOne` 호출에 model이 없다 (주입된 클라이언트는 `jev-latest`로 요청한다) |
 | `score_levels` | Score 레벨이 2~10개가 아니다. 레벨에 `None`/`null`이 있다 | criteria가 리터럴이 아니라 검사할 수 없다 |
 | `choice_no_match` | — | Choice에 `other`/`none`/`unknown`/`기타`/`해당없음` 등의 선택지가 없다. 면제하려면 `jev-check: no-match-not-needed` 주석을 단다 |
 | `single_questions_module` | jev 디렉터리 하나 안에서 질문 정의가 여러 모듈에 있다. 또는 jev 디렉터리 밖에 질문 정의가 있다 | — (정의를 못 찾으면 skip) |

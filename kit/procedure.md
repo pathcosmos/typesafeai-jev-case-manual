@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.3 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.4 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -34,6 +34,7 @@
    - `python3` 버전 (3.10 이상이면 KIT 스크립트를 쓸 수 있다).
 3. `RUN/`을 만들고, 추적되지 않는 로컬 제외 파일 `TARGET/.git/info/exclude`에 `.jev/`를 추가한다. 이 파일은 커밋 대상이 아니므로 규칙 1에 어긋나지 않는다. 추적되는 `.gitignore`에는 5단계에서 추가한다.
 4. KIT 버전(`KIT/.claude-plugin/plugin.json`의 `version`)과 확인일을 `RUN/state.json`에 기록한다.
+5. **기준선(baseline)을 기록한다.** 변경하기 전의 상태에서 기존 테스트, 타입 검사, 린트를 실행해 보고 결과를 `RUN/state.json`의 `baseline`에 적는다. 예: "`pytest`는 import 경로 문제로 원래부터 실패하고 `python -m pytest`는 통과", "`tsc`는 `@types/node`가 없어서 원래부터 실패". 이렇게 해야 7단계에서 **원래 있던 실패와 이번 변경으로 생긴 실패를 구분**할 수 있다. 의존성 설치가 필요하면 임시 환경(스크래치 venv, 설치 결과를 추적하지 않는 상태)에서만 한다.
 
 ## 1. 탐지
 
@@ -86,7 +87,8 @@
 | --- | --- |
 | 적용할 지점 | 채택 지점 목록 (지점별로 승인하거나 뺄 수 있다) |
 | 바뀌는 것 | 새 브랜치 이름, 추가하거나 수정할 파일 목록, 추가할 의존성과 버전, `.gitignore`에 `.jev/` 추가 |
-| 동작 영향 | 기본은 **shadow 또는 기존 경로 유지**: Jev 결과를 쓰는 조건, fallback 조건 |
+| 동작 영향 | 기본은 **꺼짐(off) 또는 기존 경로 유지**: Jev 결과를 쓰는 조건, fallback 조건. 모드 스위치(off / shadow / on)를 두면 기본값을 명시한다 |
+| 외부 전송 | **shadow 모드도 운영 데이터를 외부 API로 보내고 비용이 발생한다.** 켜지는 조건(키가 있을 때, 환경변수), 보내는 필드, 로그에 남기는 것과 남기지 않는 것을 명시하고 별도로 승인받는다 |
 | 측정 (6단계) | 키 유무, 실행 여부, 예산 (기본: 요청 50건, 입력 토큰 200k ≈ $0.01), 보낼 표본의 종류 (합성 / 사용자 제공) |
 | 미정 항목 | 3단계에서 정하지 못한 것 |
 
@@ -98,17 +100,17 @@
 읽을 것: `KIT/manual/03-integration.md`, `KIT/kit/scaffolds/` (있으면), `KIT/reference/12-sdk-python.md` 또는 `KIT/reference/13-sdk-javascript.md`
 
 1. 브랜치를 만든다: `git switch -c jev/apply-<YYYYMMDD>`. 같은 이름이 있으면 `-2`, `-3`을 붙인다.
-2. `.gitignore`에 `.jev/`를 추가한다.
+2. `.gitignore`에 `.jev/`를 추가한다. `.gitignore`가 없거나 부족하면 이번 작업으로 생기는 산출물(`__pycache__/`, `.venv/`, `node_modules/`, `dist/`)도 함께 추가하고, 승인 보고에 적는다.
 3. SDK를 **프로젝트의 패키지 관리자로** 추가한다 (고정 버전):
    - Python: `typesafe-sdk==<현재 검증 버전>` (uv / poetry / pip + requirements, 프로젝트 방식을 따른다)
    - JS/TS: `@typesafe-ai/sdk@<현재 검증 버전>` (npm / pnpm / yarn / bun)
    - 현재 검증 버전은 `KIT/reference/12`와 `13`의 머리말에 있다. 더 최신 버전이 있으면 changelog의 breaking change를 확인하고 사용자에게 알린다.
 4. 기존 LLM 호출 모듈 옆에 `jev/`를 만든다 (DESIGN §11 D4). 구성은 `questions`, `policy`, `decide`와 테스트다.
    - `KIT/kit/scaffolds/<python|ts>/`가 있으면 그것을 **원본으로 삼아** 프로젝트 관례(모듈 경로, 네이밍, 타입 스타일, 테스트 도구)에 맞게 옮긴다. 없으면 `KIT/manual/03-integration.md`의 검증된 골격을 쓴다.
-   - 불변 조건: 모델은 `jev-1.13.0`로 고정한다. 질문과 임계값은 각각 한 모듈에 둔다. 임계값마다 `[잠정]` 주석과 읽는 값을 적는다. 클라이언트는 import 시점에 만들지 않는다 (지연 생성이나 주입). 실패는 모두 fallback으로 보낸다. API 키는 서버 측 환경변수에서만 읽는다.
+   - 불변 조건: 모델은 `jev-1.13.0`로 고정하고 **요청마다 model을 넣는다** (주입된 클라이언트의 기본값 `jev-latest`로 새지 않게). 질문과 임계값은 각각 한 모듈에 둔다. 임계값마다 `[잠정]` 주석과 읽는 값을 적는다. 클라이언트는 import 시점에 만들지 않는다 (지연 생성이나 주입). 실패는 모두 fallback으로 보낸다. API 키는 서버 측 환경변수에서만 읽는다.
 5. 기존 코드와 **연결**한다. 승인한 동작 영향대로 한다 (기본: 기존 경로 유지 + Jev 결과 기록, 또는 조건부 사용). 기존 공개 인터페이스는 바꾸지 않는다.
 6. 녹화한 응답 기반 정책 테스트를 추가한다 (API 키 없이 돌아가야 한다).
-7. 작업 단위로 커밋한다. 메시지 예: `feat(jev): add Jev decision module for <지점>`. **push하지 않는다.**
+7. 작업 단위로 커밋한다. 메시지 예: `feat(jev): add Jev decision module for <지점>`. **커밋 전에 `git status`로 생성 산출물(캐시, 빌드 결과, 가상환경)이 스테이징되지 않았는지 확인한다.** **push하지 않는다.**
 
 ## 6. 측정 (선택)
 
@@ -130,7 +132,7 @@
 
 읽을 것: `KIT/manual/06-review-checklist.md`
 
-1. TARGET의 **기존 테스트 전체**와 새 테스트를 실행한다. 명령은 탐지한 테스트 러너를 쓴다.
+1. TARGET의 **기존 테스트 전체**와 새 테스트를 실행한다. 명령은 탐지한 테스트 러너를 쓴다. 결과를 0단계 기준선과 비교해서, 원래 있던 실패는 "기존 실패"로 따로 보고한다 (이번 변경의 범위 밖이면 고치지 않는다).
 2. `KIT/kit/check/check.py`가 있으면 실행한다:
    ```bash
    python3 KIT/kit/check/check.py TARGET --jev-dir <jev 모듈 경로>
@@ -151,6 +153,7 @@
    - §5 운영 추정
    - §6 리스크
    - 머리말의 기준 버전과 KIT 버전
+   - **링크**: 대상 저장소 안에서는 KIT의 상대 링크(`../manual/…`)가 깨진다. KIT 문서는 `https://github.com/pathcosmos/typesafeai-jev-case-manual/blob/main/<경로>` 형식의 절대 링크로 쓴다 (KIT 사본 쪽은 상대 링크를 그대로 둬도 된다)
 2. 적용 브랜치에 커밋한다: `docs(jev): add Jev case document`.
 3. KIT 저장소의 `cases/<project-slug>.md`에 **사본**을 쓴다:
    - 비밀 정보, 운영 데이터 원문, 표본 원문은 제외한다.

@@ -27,6 +27,8 @@ scaffold는 **그대로 복사하지 않는다.** 예시 질문(`topic`, `refund
 | 질문은 한 모듈에 둔다 | `questions.py` | `questions.ts` |
 | 모델 버전과 임계값은 한 모듈에 두고, 임계값마다 `[잠정]` 태그와 읽는 값을 적는다 | `policy.py` | `policy.ts` |
 | 클라이언트를 import 시점에 만들지 않는다 (지연 생성 + 주입 가능) | `default_client()` + `client=` 인자 | `defaultClient()` + `opts.client` |
+| **요청마다 model을 넣는다** (주입된 클라이언트의 기본값 `jev-latest`로 새지 않게) | `system_one(..., model=policy.MODEL)` | `systemOne({..., model: POLICY.model})` |
+| 로그용 `request_id`를 안전하게 읽는다 (SDK 0.7.1은 헤더가 없으면 예외를 던진다) | `_request_id(r)` | 해당 없음 |
 | 시도당 상한과 총 지연 상한을 둔다 | `timeout=` + `RetryPolicy(timeout=)` | `timeout` + `maxRetries` + `maxRetryAfterMs` + `AbortSignal` |
 | API 호출만 try로 감싸고, `TypeSafeError`는 fallback으로 보낸다 | `except TypeSafeError` | `instanceof TypeSafeError`, 그 외 예외는 다시 던진다 |
 | no-match나 낮은 confidence는 사람 검토로 보낸다 | `other` / `< TOPIC_MIN_CONFIDENCE` | 동일 |

@@ -17,12 +17,15 @@ const RECORDED = { // 녹화한 응답 (실제 호출 결과를 저장해 두고
   usage: { input_tokens: 400, output_tokens: 30 },
 };
 
-function clientReturning(status: number, body: unknown): TypeSafeClient {
-  const fetch = async () =>
+function clientReturning(status: number, body: unknown, seen?: unknown[]): TypeSafeClient {
+  const fetch = async (_url: string | URL | Request, init?: RequestInit) => {
+    if (seen && init?.body) seen.push(JSON.parse(String(init.body)));
+    return (
     new Response(JSON.stringify(body), {
       status,
       headers: { "content-type": "application/json", "x-typesafe-request-id": "req_test" },
-    });
+    }));
+  };
   return new TypeSafeClient({ apiKey: "test-key", fetch, retry: { maxRetries: 0 } });
 }
 
@@ -48,4 +51,10 @@ test("API error falls back", async () => {
 
 test("empty message goes to human review without calling the API", async () => {
   assert.equal((await decide("", { client: clientReturning(200, RECORDED) })).route, "human_review");
+});
+
+test("request pins the policy model even with an injected client", async () => {
+  const seen: any[] = [];
+  await decide("charged twice", { client: clientReturning(200, RECORDED, seen) });
+  assert.equal(seen[0].model, "jev-1.13.0");
 });

@@ -15,9 +15,12 @@ RECORDED = {  # 녹화한 응답 (실제 호출 결과를 저장해 두고 쓴�
     "usage": {"input_tokens": 400, "output_tokens": 30},
 }
 
-def client_returning(status: int, body):
+def client_returning(status: int, body, headers=None, seen=None):
     def handler(request):
-        return httpx2.Response(status, json=body, headers={"x-typesafe-request-id": "req_test"})
+        if seen is not None:
+            seen.append(json.loads(request.content))
+        return httpx2.Response(status, json=body,
+                               headers={"x-typesafe-request-id": "req_test"} if headers is None else headers)
     return TypeSafeClient(api_key="test-key", transport=httpx2.MockTransport(handler),
                           retry=RetryPolicy(max_retries=0))
 
@@ -35,3 +38,15 @@ def test_api_error_falls_back():
 
 def test_empty_message():
     assert decide({"message": ""}, client_returning(200, RECORDED)).route == "human_review"
+
+
+def test_missing_request_id_header_does_not_raise():
+    # SDK 0.7.1: 응답에 x-typesafe-request-id가 없으면 r.request_id 접근이 TypeSafeError를 던진다
+    d = decide({"message": "charged twice"}, client_returning(200, RECORDED, headers={}))
+    assert d.route == "billing" and d.request_id is None
+
+
+def test_request_pins_model_even_with_injected_client():
+    seen = []
+    decide({"message": "charged twice"}, client_returning(200, RECORDED, seen=seen))
+    assert seen[0]["model"] == "jev-1.13.0"

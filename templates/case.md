@@ -6,6 +6,7 @@
 - 숫자(임계값, 정확도, 비용)에는 반드시 상태를 붙인다: [잠정] 평가 전 가정 / [측정] 평가셋으로 측정함 / [공식 예시] 쿡북이나 문서의 예시 값.
 - 사실 정보는 reference/를 링크하고 복제하지 않는다. 확인되지 않은 것(sources.md D1~D13, research의 [C]/[?])을 근거로 쓰지 않는다.
 - 코드 경로는 `path/to/file.py:123` 형식으로 적는다 (대상 저장소 기준).
+- 대상 저장소의 `docs/jev-case.md`로 쓸 때는 KIT 문서 링크(`../manual/...` 등)를 `https://github.com/pathcosmos/typesafeai-jev-case-manual/blob/main/<경로>` 절대 링크로 바꾼다. 상대 링크는 KIT 저장소의 `cases/` 사본에서만 동작한다.
 -->
 
 # Case: {{프로젝트 이름}}

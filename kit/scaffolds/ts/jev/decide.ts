@@ -21,7 +21,8 @@ export async function decide(message: string, opts: { client?: TypeSafeClient; s
   let r;
   try {                                              // API 호출만 감싼다. 정책 코드의 버그를 숨기지 않는다
     r = await (opts.client ?? defaultClient()).systemOne(
-      { state: { ticket: { message } }, questions: QUESTIONS },
+      // 모델은 요청마다 넣는다: 주입된 클라이언트의 기본값(jev-latest)으로 새지 않게 한다
+      { state: { ticket: { message } }, questions: QUESTIONS, model: POLICY.model },
       { signal: opts.signal },
     );
   } catch (e) {

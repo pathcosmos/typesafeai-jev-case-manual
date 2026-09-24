@@ -102,6 +102,11 @@ TypeSafeError
 ```
 `TypeSafeError`는 질문이 비어 있거나 score의 criteria가 빈 리스트일 때도 발생한다. `TypeSafeAPIError`는 재시도를 모두 한 뒤에 발생한다.
 
+## 알려진 동작 (2026-09-25 e2e에서 확인)
+
+- **`SystemOneResponse.request_id`는 응답에 `x-typesafe-request-id` 헤더가 없으면 `TypeSafeError`를 던진다.** 로그용으로 읽을 때는 try로 감싸서 None으로 처리한다 (`kit/scaffolds/python/jev/decide.py`의 `_request_id`).
+- 클라이언트 생성자의 `model=`은 **그 클라이언트의 기본값**일 뿐이다. 주입된 클라이언트나 테스트 클라이언트를 쓰면 기본값 `jev-latest`로 요청이 나갈 수 있다. 버전을 고정하려면 **`system_one(..., model=...)`로 요청마다** 넣는다.
+
 ## 로깅
 
 - 로거 이름은 `typesafe_sdk`다. `info`는 요청당 한 줄 요약을, `debug`는 헤더와 body까지 남긴다.
