@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.4 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.5 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -118,12 +118,16 @@
 
 실행 조건: 키가 있고, 4단계에서 측정을 승인했다. 하나라도 아니면 **건너뛰고** 사유를 기록한다. 임계값은 [잠정]으로 남는다.
 
-1. 표본을 준비한다: 합성 표본(설계한 경계 사례 포함) 또는 사용자가 제공하거나 승인한 표본. `RUN/samples.jsonl`에 저장한다 (커밋하지 않는다).
+1. 입력을 준비한다 (형식은 `KIT/kit/measure/README.md`):
+   - `RUN/questions.json`: 적용한 `questions` 모듈과 같은 내용의 HTTP API 형식 questions map
+   - `RUN/samples.jsonl`: 합성 표본(설계한 경계 사례 포함) 또는 사용자가 제공하거나 승인한 표본. 가능하면 `label`을 붙인다. 커밋하지 않는다.
+   - 먼저 `--dry-run`으로 spec 검증과 비용 추정을 확인한다.
 2. `KIT/kit/measure/measure.py`가 있으면 실행한다 (예산 상한을 지킨다):
    ```bash
    python3 KIT/kit/measure/measure.py --questions RUN/questions.json --samples RUN/samples.jsonl \
      --budget-requests 50 --budget-input-tokens 200000 --model jev-1.13.0 --out RUN/measure.json
    ```
+   종료 코드: `0` 완료 · `2` 키 없음 → 건너뜀 · `3` spec 오류 → 고치고 다시 실행 · `4` 인증이나 요청 형식 오류로 중단 → 원인을 보고하고 [잠정]으로 진행.
    스크립트가 없으면 5단계에서 추가한 `decide` 모듈이나 SDK로 **같은 예산 규칙을 지키며** 직접 호출한다. 요청 수를 세고 상한 전에 멈춘다.
 3. 에러는 reference/11의 "실제 동작" 표로 분류한다 (401/403 키, 400/422 형식, HTML 403 WAF, 429/5xx 용량). 키 문제면 측정을 중단하고 [잠정]으로 진행한다.
 4. 결과를 요약한다: 질문별 분포, 응답 `model`, p50/p95 지연, 요청 수, 토큰, 추정 비용. 임계값 초안은 계속 **[잠정]**으로 둔다. 표본이 평가셋이 아니기 때문이다. [측정]은 manual/04의 평가셋 절차를 거친 경우에만 붙인다.
