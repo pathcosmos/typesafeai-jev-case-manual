@@ -1,0 +1,13 @@
+# 킷 검증용 최소 프로젝트 (대상 프로젝트로 복사하지 않는다)
+[project]
+name = "jev-scaffold-python"
+version = "0.0.0"
+requires-python = ">=3.10"
+dependencies = ["typesafe-sdk==0.7.1"]
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

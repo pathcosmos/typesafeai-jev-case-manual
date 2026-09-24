@@ -1,0 +1,17 @@
+{
+  "name": "jev-scaffold-ts",
+  "private": true,
+  "type": "module",
+  "description": "킷 검증용 최소 프로젝트 (대상 프로젝트로 복사하지 않는다)",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "tsc && node --test dist/test/"
+  },
+  "dependencies": {
+    "@typesafe-ai/sdk": "0.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}

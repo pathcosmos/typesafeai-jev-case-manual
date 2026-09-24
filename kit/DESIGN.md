@@ -191,7 +191,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 순서 | 작업 | 완료 기준 |
 | --- | --- | --- |
 | 1 ✅ | `.claude-plugin/` 매니페스트, `skills/apply/SKILL.md`, `kit/procedure.md` 초안 | `claude plugin validate` 통과. 로컬 설치 후 `/jev:apply`가 procedure를 읽음 → **2026-09-25 확인**: git이 아닌 빈 폴더에서 0단계 규칙대로 멈추고 파일을 수정하지 않음 |
-| 2 | `kit/scaffolds/` (검증한 코드를 옮기고 테스트 포함), manual/03 연결 | pytest와 tsc 통과 |
+| 2 ✅ | `kit/scaffolds/` (검증한 코드를 옮기고 테스트 포함), manual/03 연결 | pytest와 tsc 통과 → **2026-09-25 확인**: `verify.sh`로 Python pytest 4개, TS strict tsc + node --test 4개 통과 (키 없음) |
 | 3 | `kit/detect/detect.py` + fixtures 2개 | fixture에서 기대한 후보 지점을 탐지 |
 | 4 | `kit/check/check.py` | fixture에 적용한 결과가 통과하고, 일부러 깨뜨린 사례는 실패 |
 | 5 | fixture 대상 end-to-end 실행 (Claude Code) | §5.5 인수 기준 통과 |
