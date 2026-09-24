@@ -193,7 +193,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 1 ✅ | `.claude-plugin/` 매니페스트, `skills/apply/SKILL.md`, `kit/procedure.md` 초안 | `claude plugin validate` 통과. 로컬 설치 후 `/jev:apply`가 procedure를 읽음 → **2026-09-25 확인**: git이 아닌 빈 폴더에서 0단계 규칙대로 멈추고 파일을 수정하지 않음 |
 | 2 ✅ | `kit/scaffolds/` (검증한 코드를 옮기고 테스트 포함), manual/03 연결 | pytest와 tsc 통과 → **2026-09-25 확인**: `verify.sh`로 Python pytest 4개, TS strict tsc + node --test 4개 통과 (키 없음) |
 | 3 ✅ | `kit/detect/detect.py` + fixtures 2개 | fixture에서 기대한 후보 지점을 탐지 → **2026-09-25 확인**: unittest 15개 통과. 실제 프로젝트 5개에서 크래시 없음. 휴리스틱을 strong/weak로 나누는 노이즈 필터 추가 (§5.1 스키마의 확장은 `kit/detect/README.md`) |
-| 4 | `kit/check/check.py` | fixture에 적용한 결과가 통과하고, 일부러 깨뜨린 사례는 실패 |
+| 4 ✅ | `kit/check/check.py` | fixture에 적용한 결과가 통과하고, 일부러 깨뜨린 사례는 실패 → **2026-09-25 확인**: unittest 22개 통과 (Python/TS scaffold 통과, 깨뜨린 변형 17가지 검출, 모노레포에서 jev 디렉터리별 판정). 검사 항목은 `kit/check/README.md` |
 | 5 | fixture 대상 end-to-end 실행 (Claude Code) | §5.5 인수 기준 통과 |
 | 6 | `kit/measure/measure.py` | 키가 없으면 건너뛰고, 키가 있으면 예산 안에서 보고서를 만듦 |
 | 7 | AGENTS.md 개편과 Codex 경로 확인 | 같은 fixture에서 같은 형식의 산출물이 나옴 |

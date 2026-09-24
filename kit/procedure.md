@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.2 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.3 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -135,7 +135,8 @@
    ```bash
    python3 KIT/kit/check/check.py TARGET --jev-dir <jev 모듈 경로>
    ```
-   없으면 manual/06 체크리스트를 에이전트가 직접 점검하고 항목별 결과를 기록한다.
+   결과는 `RUN/check.json`에 저장한다. 종료 코드 `1`(fail)이면 고치고 다시 실행한다. `2`(jev 디렉터리를 못 찾음)이면 `--jev-dir`로 지정한다. warn은 사유를 케이스 문서에 적는다. 항목은 `KIT/kit/check/README.md`에 있다.
+   스크립트가 없으면 manual/06 체크리스트를 에이전트가 직접 점검하고 항목별 결과를 기록한다. 정적 검사가 통과해도 질문 문구 품질과 fan-out 여부는 manual/02와 06으로 직접 리뷰한다.
 3. 타입 검사와 린트가 프로젝트에 있으면 실행한다.
 4. 실패하면 고치고 다시 실행한다. 같은 실패가 3번 반복되면 멈추고, 원인과 현재 상태를 보고한다.
 
