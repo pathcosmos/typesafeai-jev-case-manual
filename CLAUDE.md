@@ -56,7 +56,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 현재 상태
 
-- 작성 완료 (v0): `sources.md`, `reference/`(01~13과 README), `patterns/`(README, catalog, domain-map), `research/`(ecosystem: 외부 생태계와 gotcha, domain-practice: 5개 도메인 외부 레퍼런스와 임계값 방법론), `manual/`(01 적용 판단 ~ 06 리뷰 체크리스트), `AGENTS.md`(외부 에이전트 진입점), `templates/case.md`(케이스 문서 템플릿). 다음 단계는 `cases/`다.
+- 작성 완료 (v0): `sources.md`, `reference/`(01~13과 README), `patterns/`(README, catalog, domain-map), `research/`(ecosystem: 외부 생태계와 gotcha, domain-practice: 5개 도메인 외부 레퍼런스와 임계값 방법론), `manual/`(01 적용 판단 ~ 06 리뷰 체크리스트), `AGENTS.md`(외부 에이전트 진입점), `templates/case.md`(케이스 문서 템플릿). v1 전환 이후 킷 구현 중이다. 진행 상황은 `kit/DESIGN.md` §9에 있다 (1단계 완료: 플러그인 매니페스트, `skills/apply`, `kit/procedure.md`).
+- **킷 규칙**: 절차 본문은 `kit/procedure.md` 한 곳에만 둔다 (skill과 AGENTS.md는 참조만 한다). 저장소 루트가 곧 플러그인이다. 킷이나 지식 베이스를 바꾸면 `.claude-plugin/plugin.json`의 `version`을 올리고 `claude plugin validate .`를 실행한다. 로컬 설치본은 `claude plugin update jev@jev-kit`로 갱신한다.
 - 케이스 문서는 `templates/case.md`의 섹션 구조를 유지한다. 템플릿을 바꾸면 기존 `cases/` 문서와 `manual/`의 참조도 함께 맞춘다.
 - 한 문서의 사실을 고치면, 같은 사실을 요약한 곳(`AGENTS.md`의 규칙과 함정, `reference/README`의 치트시트, `manual/06`)도 함께 고친다.
 - `research/`의 커뮤니티 자료는 신뢰도 태그([O]/[3P]/[C]/[?])를 유지한다. [C]나 [?] 수치를 공식 사실처럼 인용하지 않는다.

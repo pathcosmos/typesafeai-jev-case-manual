@@ -1,0 +1,14 @@
+{
+  "name": "jev-kit",
+  "description": "Kit that lets coding agents detect a project and apply TypeSafe Jev, backed by a curated knowledge base.",
+  "owner": {
+    "name": "lanco"
+  },
+  "plugins": [
+    {
+      "name": "jev",
+      "description": "Detect the current project and apply TypeSafe Jev where it fits (/jev:apply).",
+      "source": "./"
+    }
+  ]
+}

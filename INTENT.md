@@ -82,11 +82,12 @@ CLAUDE.md                  ← 이 저장소 유지보수 규칙
 AGENTS.md                  ← 에이전트 진입점 (연결 방법, 절차 요약)
 reference/ patterns/ research/ manual/ templates/ sources.md
                            ← 지식 베이스 (v0에서 작성함)
-kit/                       ← 🆕 자동 적용 킷 (구조는 §8 결정 후 확정)
-  procedure              ← 탐지 → 발굴 → 설계 → 적용 → 검증 → 기록 절차 (에이전트 실행용)
-  detect                 ← 스택과 LLM 사용 지점 탐지 (결정적 스크립트 + 에이전트 판단)
-  scaffolds              ← 스택별 검증된 코드 골격 (python, ts) + 테스트
-  adapters               ← 에이전트별 진입점: Claude Code plugin(skill + /jev-apply), AGENTS.md 스니펫
+.claude-plugin/ skills/    ← 🆕 Claude Code 플러그인 (저장소 루트 = 플러그인, 호출 /jev:apply 예정)
+kit/                       ← 🆕 자동 적용 킷 (상세 설계: kit/DESIGN.md)
+  procedure.md             ← 단일 절차 (탐지 → 발굴 → 설계 → 승인 → 적용 → 측정 → 검증 → 기록)
+  detect/ check/ measure/  ← 결정적 스크립트 (python 표준 라이브러리)
+  scaffolds/               ← 스택별 검증된 코드 골격 (python, ts) + 테스트
+  fixtures/                ← 킷 인수 테스트용 샘플 프로젝트
 cases/                     ← 적용 사례 사본 (원본은 대상 프로젝트 docs/jev-case.md)
 ```
 
