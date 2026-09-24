@@ -56,7 +56,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 현재 상태
 
-- 작성 완료 (v0): `sources.md`, `reference/`(01~13과 README), `patterns/`(README, catalog, domain-map), `research/`(ecosystem: 외부 생태계와 gotcha, domain-practice: 5개 도메인 외부 레퍼런스와 임계값 방법론), `manual/`(01 적용 판단 ~ 06 리뷰 체크리스트), `AGENTS.md`(외부 에이전트 진입점), `templates/case.md`(케이스 문서 템플릿). v1 전환 이후 킷 구현 중이다. 진행 상황은 `kit/DESIGN.md` §9에 있다 (1~2단계 완료: 플러그인 매니페스트, `skills/apply`, `kit/procedure.md`, `kit/scaffolds/`).
+- 작성 완료 (v0): `sources.md`, `reference/`(01~13과 README), `patterns/`(README, catalog, domain-map), `research/`(ecosystem: 외부 생태계와 gotcha, domain-practice: 5개 도메인 외부 레퍼런스와 임계값 방법론), `manual/`(01 적용 판단 ~ 06 리뷰 체크리스트), `AGENTS.md`(외부 에이전트 진입점), `templates/case.md`(케이스 문서 템플릿). v1 전환 이후 킷 구현 중이다. 진행 상황은 `kit/DESIGN.md` §9에 있다 (1~3단계 완료: 플러그인 매니페스트, `skills/apply`, `kit/procedure.md`, `kit/scaffolds/`, `kit/detect/` + `kit/fixtures/`). 킷 전체 검증은 `bash kit/test.sh`로 한다.
 - **scaffold 규칙**: 코드 원본은 `kit/scaffolds/`에만 둔다 (`manual/03`은 링크만 한다). scaffold나 SDK 버전을 바꾸면 `bash kit/scaffolds/verify.sh`를 통과시킨다.
 - **킷 규칙**: 절차 본문은 `kit/procedure.md` 한 곳에만 둔다 (skill과 AGENTS.md는 참조만 한다). 저장소 루트가 곧 플러그인이다. 킷이나 지식 베이스를 바꾸면 `.claude-plugin/plugin.json`의 `version`을 올리고 `claude plugin validate .`를 실행한다. 로컬 설치본은 `claude plugin update jev@jev-kit`로 갱신한다.
 - 케이스 문서는 `templates/case.md`의 섹션 구조를 유지한다. 템플릿을 바꾸면 기존 `cases/` 문서와 `manual/`의 참조도 함께 맞춘다.
