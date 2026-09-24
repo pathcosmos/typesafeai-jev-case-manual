@@ -196,7 +196,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 4 ✅ | `kit/check/check.py` | fixture에 적용한 결과가 통과하고, 일부러 깨뜨린 사례는 실패 → **2026-09-25 확인**: unittest 22개 통과 (Python/TS scaffold 통과, 깨뜨린 변형 17가지 검출, 모노레포에서 jev 디렉터리별 판정). 검사 항목은 `kit/check/README.md` |
 | 5 ✅ | fixture 대상 end-to-end 실행 (Claude Code) | §5.5 인수 기준 통과 → **2026-09-25 확인**: 두 fixture 모두 승인 전 변경 0, 기대한 판단, 브랜치 적용, 테스트와 check 통과, 케이스 문서 생성. 발견 7건을 kit 0.1.4에 반영 ([kit/e2e/RESULTS.md](e2e/RESULTS.md)) |
 | 6 ✅ | `kit/measure/measure.py` | 키가 없으면 건너뛰고, 키가 있으면 예산 안에서 보고서를 만듦 → **2026-09-25 확인**: mock API로 11개 시나리오 통과 (키 없음, 잘못된 spec, 요청과 토큰 예산, 429 재시도, HTML 403, 인증과 형식 오류 중단, 키와 원문 비노출, dry-run). 실제 API에 가짜 키로 401 → auth 분류 확인. **실제 키로 한 측정은 아직 하지 않음** |
-| 7 | AGENTS.md 개편과 Codex 경로 확인 | 같은 fixture에서 같은 형식의 산출물이 나옴 |
+| 7 ✅ | AGENTS.md 개편과 Codex 경로 확인 | 같은 fixture에서 같은 형식의 산출물이 나옴 → **2026-09-25 확인**: Codex CLI로 `py-openai-json`을 실행해서 같은 판단, 테스트 44개 통과, check 0/0, 케이스 문서 섹션 일치. 발견(`.git` 읽기 전용 샌드박스)을 kit 0.1.6에 반영 ([RESULTS](e2e/RESULTS.md#codex-실행-에이전트-중립성-검증-2026-09-25--kit-015)) |
 | 8 | 파일럿 실제 프로젝트 1~2개 | 케이스 문서와 브랜치가 생기고 사용자 리뷰를 받음 |
 
 ## 10. 확장 지점 (MVP 밖)

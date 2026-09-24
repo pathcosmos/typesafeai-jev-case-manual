@@ -1,25 +1,53 @@
-# AGENTS.md — Jev(TypeSafe) 적용 가이드: 에이전트 진입점
+# AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
-> 이 저장소: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> 확인일: 2026-09-24 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0
+> 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
+> kit 0.1.6 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
-다른 프로젝트에서 **TypeSafe Jev를 쓸지 판단하고, 설계하고, 구현하고, 리뷰할 때** 이 문서부터 읽는다. 모든 문서는 로컬 Markdown이므로 경로로 바로 읽을 수 있다.
+> **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
-> **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **소비하는 쪽**을 위한 것이다.
+## 1. 사용자가 "Jev 적용해 줘"라고 하면 (모든 에이전트 공통)
 
-## 다른 프로젝트에서 연결하는 법
+**KIT**는 이 킷 저장소의 루트(이 파일이 있는 디렉터리)다. **TARGET**은 사용자의 현재 프로젝트다.
 
-사용하는 프로젝트의 `CLAUDE.md`(또는 `AGENTS.md`)에 아래 블록을 붙여 넣는다. 경로는 이 머신 기준 절대경로이므로 환경마다 바꾼다.
+1. KIT 경로를 확인한다: 사용자의 AGENTS.md나 CLAUDE.md에 적힌 경로, 또는 사용자가 알려 준 경로. `KIT/kit/procedure.md`가 없으면 멈추고 경로를 묻는다.
+2. **`KIT/kit/procedure.md`를 처음부터 끝까지 읽고 그대로 따른다.** 절차는 이 문서가 아니라 procedure에만 있다 (여기서 요약하거나 바꾸지 않는다).
+3. 절차의 스크립트는 KIT 경로로 실행한다 (Python 3.10 이상, 표준 라이브러리만 사용):
+   ```bash
+   python3 KIT/kit/detect/detect.py TARGET > TARGET/.jev/detect.json
+   python3 KIT/kit/check/check.py TARGET
+   python3 KIT/kit/measure/measure.py --questions ... --samples ... --dry-run
+   ```
+4. 절차 8단계의 케이스 문서 사본은 KIT의 `cases/`에 쓴다. KIT가 읽기 전용이면(샌드박스, 플러그인 캐시) 사용자에게 알리고 내용을 전달한다.
+
+Claude Code에서는 플러그인으로 설치하면 `/jev:apply`가 같은 절차를 실행한다:
+```bash
+claude plugin marketplace add pathcosmos/typesafeai-jev-case-manual
+```
+```bash
+claude plugin install jev@jev-kit
+```
+
+## 2. 다른 프로젝트에 연결하는 법
+
+사용하는 프로젝트의 `AGENTS.md`(Codex 등) 또는 `CLAUDE.md`에 아래 블록을 붙여 넣는다. KIT 경로는 각자의 클론 위치로 바꾼다.
 
 ```markdown
 ## TypeSafe / Jev
-TypeSafe Jev 관련 작업(도입 검토, 질문 설계, 구현, 리뷰) 전에는 반드시
-`/Users/lanco/taketimes/typesafeai-jev-case-manual/AGENTS.md`를 읽고, 그 문서의 읽는 순서와 규칙을 따른다.
+TypeSafe Jev 적용, 도입 검토, 질문 설계, 리뷰 요청을 받으면
+KIT=/Users/lanco/taketimes/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 읽고,
+`KIT/kit/procedure.md` 절차를 그대로 따른다. (승인 전 파일 수정 금지, 새 브랜치에서만 적용, push 금지)
 ```
 
-- Claude Code에서는 CLAUDE.md에 `@/Users/lanco/taketimes/typesafeai-jev-case-manual/AGENTS.md` 한 줄을 넣어 **import**할 수도 있다. 이렇게 하면 매 세션에 이 문서가 로드되므로, Jev를 자주 쓰는 프로젝트에서만 권장한다.
-- Codex처럼 루트 `AGENTS.md`를 자동으로 읽는 도구는 위 텍스트 지시만으로 충분하다.
-- 공식 TypeSafe skill(`/typesafe:typesafe-ai`)은 함께 쓴다. skill은 일반 원칙과 live docs를, 이 저장소는 우리 규칙, 검증된 gotcha, 평가 절차를 제공한다.
+- **Codex**: 0~4단계(탐지, 설계, 승인 요청)는 기본 샌드박스(`-s workspace-write`)에서 된다. **5단계 적용에는 권한 세 가지가 더 필요하다.** workspace-write 샌드박스는 `.git`을 읽기 전용으로 두기 때문이다.
+  ```bash
+  codex exec -s workspace-write \
+    -c sandbox_workspace_write.network_access=true \
+    -c 'sandbox_workspace_write.writable_roots=["<TARGET>/.git", "<KIT>/cases"]' \
+    "이 프로젝트에 Jev 적용해 줘"
+  ```
+  첫째는 SDK 설치를 위한 네트워크, 둘째는 브랜치와 커밋을 위한 `.git` 쓰기, 셋째는 케이스 사본을 위한 KIT `cases/` 쓰기다. 승인 후 이어서 하려면 `codex exec resume <thread-id> "승인합니다 …"`를 쓴다. 검증 기록은 [kit/e2e/RESULTS.md](kit/e2e/RESULTS.md)에 있다.
+- **Claude Code**: 플러그인(`/jev:apply`)을 권장한다. 플러그인 없이 쓸 때는 CLAUDE.md에 위 블록을 넣거나 `@KIT/AGENTS.md`로 import한다.
+- 공식 TypeSafe skill(`/typesafe:typesafe-ai`)은 함께 써도 된다. skill은 일반 원칙과 live docs를, 이 킷은 절차, 검증된 코드 골격, gotcha, 평가 규칙을 제공한다.
 
 ## Jev란 (30초 요약)
 
@@ -30,7 +58,7 @@ TypeSafe Jev 관련 작업(도입 검토, 질문 설계, 구현, 리뷰) 전에�
 
 질문들은 같은 state에 대해 **병렬로, 서로 독립적으로** 평가된다. 과금은 입력 토큰에만 한다 ($0.042/Mtok). Jev는 **LLM의 대체재가 아니다.** 코드 안에 넣는 좁은 판단기다. 생성, 계산, 날짜 비교, 여러 단계의 추론은 못 한다.
 
-## 과제별 읽는 순서
+## 3. 지식 베이스: 과제별 읽는 순서 (절차 밖의 질문, 리뷰, 학습용)
 
 | 과제 | 읽을 문서 |
 | --- | --- |
@@ -77,6 +105,6 @@ TypeSafe Jev 관련 작업(도입 검토, 질문 설계, 구현, 리뷰) 전에�
 - `research/`의 자료에는 신뢰도 태그가 붙어 있다: [O] 공식, [3P] 파트너나 언론, [C] 커뮤니티, [?] 검증하지 못함. [C]와 [?] 수치는 결정 근거로 쓰지 않는다.
 - 새 Jev 버전이나 SDK 릴리스가 보이면 [reference/09](reference/09-models-limits.md), [reference/10](reference/10-jaggedness.md), [reference/12](reference/12-sdk-python.md), [reference/13](reference/13-sdk-javascript.md), [sources.md](sources.md) 순서로 갱신이 필요하다.
 
-## 산출물 형식
+## 산출물 형식 (절차 8단계)
 
 프로젝트에 적용할 때는 [templates/case.md](templates/case.md)를 복사해서 `cases/<project-slug>.md`로 **케이스 문서**를 남긴다. 들어갈 내용은 후보 지점 인벤토리(기각한 곳 포함), 지점별 설계(적용 판단, 패턴, state, 질문 표, 요청 구성, 결정 정책, fallback), 평가 계획과 결과, 운영, 리스크다. 모든 숫자에는 상태를 붙인다: [잠정] / [측정] / [공식 예시]. **[측정]이 아닌 임계값으로는 운영에 적용하지 않는다.**

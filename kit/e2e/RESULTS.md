@@ -31,8 +31,33 @@
 | 6 | 대상 저장소의 `docs/jev-case.md`에서 KIT 상대 링크가 깨진다 | procedure 8단계와 템플릿: 대상 저장소 쪽은 GitHub 절대 링크로 쓴다 |
 | 7 | macOS 기본 bash(3.2)에서 연관 배열이 동작하지 않는다 | run.sh를 `case` 함수로 작성 |
 
+## Codex 실행 (에이전트 중립성 검증, 2026-09-25 · kit 0.1.5)
+
+같은 `py-openai-json` fixture를 Codex CLI 0.154.0으로 실행했다. 대상 프로젝트의 `AGENTS.md`에는 [AGENTS.md §2](../../AGENTS.md#2-다른-프로젝트에-연결하는-법)의 연결 블록만 넣고 커밋했다. 요청은 "이 프로젝트에 Jev 적용해 줘" 한 줄이다.
+
+| 항목 | Claude Code (`/jev:apply`) | Codex (`AGENTS.md` 경로) |
+| --- | --- | --- |
+| 진입 | 플러그인 skill | 대상 `AGENTS.md` → KIT `AGENTS.md` → `kit/procedure.md` |
+| pass 1 | 4단계에서 정지, 추적 파일 변경 0 | 4단계에서 정지, 추적 파일 변경 0. 단 `.git`이 읽기 전용이라 `.jev/`가 untracked로 보임 (아래 발견 8) |
+| 판단 | 채택 1 · 보류 1 · 기각 2 | 채택 1 (티켓 분류) · 기각 (날짜, 요약). **같은 판단** |
+| 적용 | 4 commits, 기본 off | 2 commits, 기본 off, `uv.lock` 커밋 (Claude 실행은 lock을 만들지 않는 쪽을 택함. 둘 다 procedure가 허용함) |
+| 테스트 | 17 통과 | **44 통과** (독립 재실행) |
+| check | 0 fail / 0 warn | **0 fail / 0 warn** (`model_per_request`와 안전한 `request_id` 읽기까지 kit 0.1.5 scaffold 반영) |
+| 산출물 누출 | 없음 | 없음 (`__pycache__`, `.venv`, `.jev/` 미커밋) |
+| 케이스 문서 | 템플릿 섹션 19개 일치 | 템플릿 섹션 19개 **일치**. 머리말 표를 목록으로 바꿈 (사소함). KIT 링크는 GitHub 절대 링크로 씀 (발견 6 반영 확인) |
+| 사용량 | 약 $5.1 (Claude) | 입력 약 2.7M 토큰 (캐시 약 2.55M), 출력 약 22k 토큰 |
+
+샘플: [samples/py-openai-json.codex.case.md](samples/py-openai-json.codex.case.md)
+
+### 발견 (kit 0.1.6에 반영)
+
+| # | 발견 | 반영 |
+| --- | --- | --- |
+| 8 | **Codex의 workspace-write 샌드박스는 `.git`을 읽기 전용으로 둔다.** 그래서 `.git/info/exclude`를 쓰지 못했고, 5단계의 브랜치 생성과 커밋이 불가능했다. Codex는 이를 스스로 알아채고 승인 요청에 적었다 | procedure 0단계에 `.git` 쓰기가 불가능한 경우의 처리를 추가하고, 4단계 승인 표에 **실행 권한** 항목을 추가. AGENTS.md에 Codex 실행 명령(네트워크, `.git`과 KIT `cases/`를 writable_roots로)을 명시 |
+
 ## 한계
 
 - fixture는 작고 인위적이다. 실제 프로젝트(파일럿)에서 후보 발굴의 재현율과 정밀도, 적용 범위 판단을 확인해야 한다 (DESIGN §9 8단계).
 - 승인 메시지를 미리 정해 두었으므로 사람과의 실제 대화 흐름(범위 축소, 거절)은 따로 확인해야 한다.
 - 측정(6단계)은 키가 없는 경로만 검증했다.
+- Codex는 Python fixture 하나로만 검증했다 (TS fixture는 Claude Code에서만 실행함).

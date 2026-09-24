@@ -1,6 +1,6 @@
 {
   "name": "jev",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Detect the current project and apply TypeSafe Jev where it fits: candidate discovery, design, approved branch changes, measurement, verification, and case records.",
   "author": {
     "name": "lanco"
