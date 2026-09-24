@@ -16,7 +16,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 
 SKIP_DIRS = {
     ".git", "node_modules", ".venv", "venv", "env", "__pycache__", "dist", "build", ".next",
@@ -53,6 +53,16 @@ CALL_RE = re.compile(
     r"|\bstreamObject\(|\.a?invoke\(|\ba?completion\(|\bollama\.chat\(|\.models\.generate_content\("
 )
 CLIENT_RE = re.compile(r"\bnew\s+(OpenAI|Anthropic|GoogleGenAI|Groq|Mistral)\s*\(|\b(OpenAI|AsyncOpenAI|Anthropic|AsyncAnthropic)\s*\(")
+# SDK 없이 모델을 부르는 경로 (2026-09-25 파일럿에서 발견: 자체 provider 계층, CLI 하위 프로세스, 플랫폼 바인딩)
+TRANSPORT_RULES = [
+    ("raw-http", "http", re.compile(
+        r"/chat/completions\b|/v1/messages\b|/v1/responses\b|/v1/completions\b|api\.openai\.com|api\.anthropic\.com"
+        r"|generativelanguage\.googleapis\.com|openrouter\.ai/api|[\"']anthropic-version[\"']")),
+    ("workers-ai", "platform", re.compile(r"\.AI\.run\(|[\"']@cf/[\w./-]+[\"']")),
+]
+SPAWN_RE = re.compile(r"child_process|\bspawn\b|execFile|\bexeca\b|subprocess\.|Bun\.spawn|os\.system\(")
+CLI_RE = re.compile(r"[\"'](claude|codex|ollama|gemini|aider)[\"']")
+STRUCTURED_RE = re.compile(r"response_format|json_schema|--output-schema|output_schema|--json-schema|tool_choice")
 TYPESAFE_RE = re.compile(r"typesafe_sdk|@typesafe-ai/sdk|@ai-sdk/typesafe-ai|langchain_typesafe|api\.typesafe\.ai")
 
 # ---------- 파싱 / 휴리스틱 신호 ----------
@@ -179,6 +189,24 @@ def scan_file(p: Path, rel: str, lang: str, out: dict, lang_counts: dict):
             sdks.append(sdk)
             out["llm_call_sites"].append({"file": rel, "line": i, "sdk": sdk, "kind": "import", "snippet": snippet(line)})
             llm_lines.append(i)
+    # SDK import가 없어도 raw HTTP, CLI 하위 프로세스, 플랫폼 호출로 모델을 부르는 경우
+    spawns = bool(SPAWN_RE.search(text))
+    for i, line in enumerate(lines, 1):
+        if TYPESAFE_RE.search(line):
+            continue
+        for sdk, kind, rx in TRANSPORT_RULES:
+            if rx.search(line):
+                out["llm_call_sites"].append({"file": rel, "line": i, "sdk": sdk, "kind": kind, "snippet": snippet(line)})
+                llm_lines.append(i)
+                sdks.append(sdk)
+                break
+        else:
+            m = CLI_RE.search(line) if spawns else None
+            if m:
+                sdk = f"{m.group(1)}-cli"
+                out["llm_call_sites"].append({"file": rel, "line": i, "sdk": sdk, "kind": "cli", "snippet": snippet(line)})
+                llm_lines.append(i)
+                sdks.append(sdk)
     if sdks:
         primary = sdks[0]
         n = 0
@@ -195,7 +223,7 @@ def scan_file(p: Path, rel: str, lang: str, out: dict, lang_counts: dict):
         for i, line in enumerate(lines, 1):
             if n >= MAX_PER_FILE:
                 break
-            if PARSE_RE[lang].search(line):
+            if PARSE_RE[lang].search(line) or STRUCTURED_RE.search(line):
                 dist = min(abs(i - j) for j in llm_lines)
                 out["parse_sites"].append({"file": rel, "line": i, "snippet": snippet(line),
                                            "near_llm": True, "llm_line_distance": dist})
@@ -350,8 +378,11 @@ def main(argv: list[str] | None = None) -> int:
         "language_signal": {"label": label, "hangul_chars": h, "latin_chars": l, "hangul_ratio": round(ratio, 3),
                             "basis": "string literals in scanned source files"},
     }
+    for s in result["llm_call_sites"] + result["parse_sites"]:
+        s["in_test"] = bool(TEST_FILE_RE.search(s["file"]))
     result["summary"] = {k: len(result[k]) for k in ("stacks", "llm_call_sites", "parse_sites", "heuristic_sites", "typesafe_usage")}
     result["summary"]["llm_files"] = len({s["file"] for s in result["llm_call_sites"]})
+    result["summary"]["llm_files_non_test"] = len({s["file"] for s in result["llm_call_sites"] if not s["in_test"]})
     result["summary"]["heuristic_strong"] = sum(s["strength"] == "strong" for s in result["heuristic_sites"])
     json.dump(result, sys.stdout, ensure_ascii=False, indent=2)
     sys.stdout.write("\n")

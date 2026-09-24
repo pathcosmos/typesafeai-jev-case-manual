@@ -124,6 +124,56 @@ class NoiseFilter(unittest.TestCase):
             self.assertIn('"urgent" in message', snippets[1])
 
 
+class CustomTransports(unittest.TestCase):
+    """SDK 없이 자체 provider 계층으로 모델을 부르는 프로젝트 (2026-09-25 파일럿에서 발견한 사각지대)."""
+
+    def test_raw_http_cli_and_platform_calls(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as d:
+            src = Path(d, "src/providers")
+            src.mkdir(parents=True)
+            (src / "openai-compat.ts").write_text(
+                "export async function call(base: string, body: object) {\n"
+                "  const res = await fetch(`${base}/chat/completions`, { method: 'POST', body: JSON.stringify({ ...body, response_format: { type: 'json_schema' } }) });\n"
+                "  return JSON.parse(await res.text());\n}\n", encoding="utf-8")
+            (src / "anthropic-api.ts").write_text(
+                "const res = await fetch(`${base}/v1/messages`, { headers: { 'anthropic-version': '2023-06-01' } });\n", encoding="utf-8")
+            (src / "claude-cli.ts").write_text(
+                "import { spawn } from 'node:child_process';\n"
+                "export const run = (prompt: string) => spawn('claude', ['-p', prompt, '--output-format', 'json']);\n", encoding="utf-8")
+            (src / "codex_exec.py").write_text(
+                "import subprocess\n"
+                "def run(prompt):\n    return subprocess.run(['codex', 'exec', '--output-schema', 's.json', prompt])\n", encoding="utf-8")
+            (src / "transcribe.ts").write_text(
+                'const r = await c.env.AI.run("@cf/openai/whisper", { audio });\n', encoding="utf-8")
+            (src / "injected.ts").write_text(  # spawn 주입 방식: bin 이름만 있고 spawn 호출은 다른 파일에 있다
+                "export const opts = { bin: this.opts.bin ?? 'claude', spawn: this.opts.spawn };\n", encoding="utf-8")
+            (src / "verify.ts").write_text(  # 'llm'이라는 enum 값은 CLI 호출이 아니다
+                "import { spawn } from 'node:child_process';\ntype By = 'engine' | 'llm';\n", encoding="utf-8")
+            (Path(d, "test")).mkdir()
+            (Path(d, "test/providers.test.ts")).write_text("fetch(`${base}/chat/completions`);\n", encoding="utf-8")
+            (src / "ui_api.ts").write_text(  # 자기 서버 API 호출은 LLM이 아니다
+                "export const get = (path: string) => fetch(`/api/projects/${path}`);\n", encoding="utf-8")
+            r = run_detect(Path(d))
+            by_file = {}
+            for s in r["llm_call_sites"]:
+                by_file.setdefault(s["file"].split("/")[-1], set()).add((s["sdk"], s["kind"]))
+            self.assertIn(("raw-http", "http"), by_file["openai-compat.ts"])
+            self.assertIn(("raw-http", "http"), by_file["anthropic-api.ts"])
+            self.assertIn(("claude-cli", "cli"), by_file["claude-cli.ts"])
+            self.assertIn(("codex-cli", "cli"), by_file["codex_exec.py"])
+            self.assertIn(("workers-ai", "platform"), by_file["transcribe.ts"])
+            self.assertNotIn("ui_api.ts", by_file)
+            self.assertIn(("claude-cli", "cli"), by_file["injected.ts"])
+            self.assertNotIn("verify.ts", by_file)
+            tests = [s for s in r["llm_call_sites"] if s["file"].endswith("providers.test.ts")]
+            self.assertTrue(tests and all(s["in_test"] for s in tests))
+            self.assertTrue(all(not s["in_test"] for s in r["llm_call_sites"] if "src/" in s["file"]))
+            # 구조화 출력 요청(json_schema, --output-schema)은 파싱 신호로도 기록한다
+            parse_files = {s["file"].split("/")[-1] for s in r["parse_sites"]}
+            self.assertTrue({"openai-compat.ts", "codex_exec.py"} <= parse_files, parse_files)
+
+
 class Robustness(unittest.TestCase):
     def test_kit_repo_itself_runs(self):
         # 저장소 자체(스캐폴드, 픽스처, 문서 포함)에도 크래시 없이 동작하고, typesafe 사용을 탐지한다

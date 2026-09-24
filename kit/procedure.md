@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.6 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.7 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -53,7 +53,7 @@
    - `typesafe_usage`: `typesafe_sdk`, `@typesafe-ai/sdk`, `api.typesafe.ai`.
    - `language_signal`: 사용자에게 보이는 문자열과 프롬프트의 한글 비율 → `ko` / `en` / `mixed`.
    - 제외: `node_modules`, `.venv`, `venv`, `dist`, `build`, `.git`, 생성된 파일.
-3. 탐지 결과를 **에이전트가 직접 읽고 보완한다.** `heuristic_sites`는 `strength: strong`을 먼저 검토한다 (weak는 정규식이라 구조 매칭이 섞일 수 있다. 스키마는 `KIT/kit/detect/README.md`). 스크립트는 후보를 좁히는 용도일 뿐이다. 각 후보 지점의 주변 코드를 열어서 입력, 출력, 호출 빈도, 실패 처리를 파악한다.
+3. 탐지 결과를 **에이전트가 직접 읽고 보완한다.** `llm_call_sites`에 `http`/`cli`/`platform` 종류가 있으면 **자체 provider 계층**이다. provider의 공개 함수(예: `invokeStructured`, `complete`, `ask`)에서 **호출부를 거꾸로 추적**해서 실제 판단 지점을 찾는다 (detect는 전송 지점만 찾는다). `in_test: true`인 지점은 제외한다. `heuristic_sites`는 `strength: strong`을 먼저 검토한다 (weak는 정규식이라 구조 매칭이 섞일 수 있다. 스키마는 `KIT/kit/detect/README.md`). 스크립트는 후보를 좁히는 용도일 뿐이다. 각 후보 지점의 주변 코드를 열어서 입력, 출력, 호출 빈도, 실패 처리를 파악한다.
 4. 사용자에게 한 단락으로 요약한다: 스택, LLM 사용 지점 수, 휴리스틱 수, 입력 언어.
 
 ## 2. 후보 발굴과 적용 판단
