@@ -66,6 +66,12 @@ class ParseTests(unittest.TestCase):
         long_tail = "Done:\n1. a\n2. b\n\n" + "Next I will do many things. " * 10 + "Want me to go on?"
         self.assertIsNone(jo.parse_options(long_tail))
 
+    def test_convention_example_is_detected_and_keeps_recommendation_out_of_options(self):
+        text = "다음 작업 후보입니다.\n\n1. 원문 한국어 케이스 추가\n2. 실제 Jev 모드 연결\n3. 대화형 hook 표시 확인\n어느 것으로 진행할까요? (추천: 3)"
+        opts, _ = jo.parse_options(text)
+        self.assertEqual(opts, ["원문 한국어 케이스 추가", "실제 Jev 모드 연결", "대화형 hook 표시 확인"])
+        self.assertFalse(any("추천" in o for o in opts))  # 추천은 질문 줄에 있으므로 state의 선택지 문구에 섞이지 않는다
+
     def test_last_block_wins(self):
         text = "Plan:\n1. a\n2. b\n\nWhich next?\n1. push\n2. wait"
         self.assertEqual(jo.parse_options(text)[0], ["push", "wait"])
