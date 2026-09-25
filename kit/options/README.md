@@ -28,8 +28,8 @@ curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manu
 | --- | --- |
 | `~/.config/jev/env` | `JEV_OPTIONS`(off/fake/jev), `TYPESAFE_API_KEY` 또는 `JEV_OPTIONS_ENV_FILE`. hook은 **환경변수가 있으면 그것을 먼저** 쓴다 (세션 하나만 끄기: `JEV_OPTIONS=off claude`) |
 | Claude Code | 킷 디렉터리를 marketplace `jev-kit`로 등록하고 `jev@jev-kit` 설치·갱신. hook은 `SessionStart`(켜져 있을 때 [선택지 표시 규약](convention.md)을 에이전트 맥락에 넣음), `Stop`, `PreToolUse`(`AskUserQuestion`) |
-| Codex | `~/.codex/hooks.json`에 `Stop`, `SessionStart` 추가 (모드가 off면 넣지 않는다). **Codex CLI의 `/hooks`에서 신뢰해야 실행된다** |
-| 예전 수동 설정 | settings.json의 `jev_options.py` hook과 `JEV_OPTIONS*` env, CLAUDE.md·AGENTS.md의 규약 블록을 지운다. 다른 hook과 내용은 그대로 둔다. 고치는 파일은 `*.bak-<시각>`으로 백업 |
+| Codex | 같은 킷 디렉터리를 **Codex marketplace `jev-kit`로 등록하고 같은 플러그인 `jev@jev-kit`를 설치**한다. hook은 Claude와 같은 `hooks/hooks.json`이다 (Codex가 `CLAUDE_PLUGIN_ROOT`를 넣어 준다). **Codex CLI의 `/hooks`에서 `jev@jev-kit` hook을 신뢰해야 실행된다.** `/jev:apply` 스킬도 함께 들어간다 |
+| 예전 수동 설정 | Claude settings.json의 `jev_options.py` hook과 `JEV_OPTIONS*` env, `~/.codex/hooks.json`에 직접 넣었던 `jev_options.py` 항목, CLAUDE.md·AGENTS.md의 규약 블록을 지운다. 다른 hook과 내용은 그대로 둔다. 고치는 파일은 `*.bak-<시각>`으로 백업 |
 
 여러 번 실행해도 결과가 같다. 저장소가 private이면 그 기기에서 먼저 `gh auth login`을 한다. 테스트: `python3 -m unittest kit/install/test_jev_install.py` (임시 HOME과 가짜 claude/codex로 7개).
 
@@ -81,5 +81,5 @@ curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manu
 - **데스크톱 앱 Code 탭 (2026-09-25)**: 두 hook이 실행됐다. 대화상자 경로의 `systemMessage`는 "Claude Code 알림"으로, Stop의 `systemMessage`는 대화 흐름에 줄마다 `Stop says:`가 붙어 표시돼서 표시를 한 줄 형식으로 바꿨다. 선택지 설명 수정(`JEV_OPTIONS_REWRITE`)은 **대화상자 화면에 보이지 않았다** ([research §4.2](../../research/agent-choice-scoring.md#42-데스크톱-앱-실측-2026-09-25)).
 - **실제 Jev (2026-09-25)**: 합성 선택지로 확인했다. 대화 기록에 사용자 요청이 있으면 뜻이 맞게 나온다: "실측 결과 정리해 줘"에 "결과 기록" 0.97/0.89/0.81, "main에 강제 push" 0.00/0.07/0.36. 요청이 없으면(`(not available)`) Choice가 설계대로 "해당 없음"(0.98~1.00)을 준다. 틀린 키는 표시 없이 stderr에 `HTTP 401 (auth)`만 남는다.
 - **Codex CLI 0.154 (2026-09-26)**: 설치기가 넣은 hook 2개를 `/hooks`에서 신뢰한 뒤 `codex exec`로 확인했다. `SessionStart`가 규약을 세션 맥락에 넣었고(세션 기록에서 확인), 에이전트가 규약대로 답했다. `Stop` hook이 선택지를 잡아 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인). 헤드리스 `exec`에서는 `systemMessage`가 출력 스트림과 세션 기록에 남지 않아 **화면 표시는 대화형 TUI에서 확인해야 한다.**
-- **Codex는 Claude 플러그인의 hook도 읽는다** (`hookify@claude-plugins-official` 등이 Codex 신뢰 목록에 있다). Codex `/hooks`에 `jev@jev-kit` 플러그인의 hook이 따로 보이면 **신뢰하지 않는다.** 설치기가 넣은 `~/.codex/hooks.json` 항목과 겹쳐 점수가 두 번 나온다.
+- **Codex도 플러그인 한 경로로 모았다 (kit 0.1.24):** Codex는 자체 플러그인 시스템으로 Claude 형식 marketplace를 읽고, 플러그인 hook에 `CLAUDE_PLUGIN_ROOT`를 넣어 준다. `~/.codex/hooks.json` 직접 항목을 지우고 `codex plugin add jev@jev-kit`로 설치한 뒤 `codex exec --dangerously-bypass-hook-trust`(확인용, 1회)로 돌려서 플러그인의 `SessionStart`(규약 전달)와 `Stop`(선택지 인식)이 실행되는 것을 확인했다. 평소에는 `/hooks`에서 신뢰한 뒤 쓴다.
 

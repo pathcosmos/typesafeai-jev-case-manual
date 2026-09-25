@@ -15,6 +15,22 @@ KIT = Path(__file__).resolve().parents[2]
 CONV = (KIT / "kit" / "options" / "convention.md").read_text(encoding="utf-8").strip()
 KEY = "test-secret-key-9f2c"
 
+STUB_CODEX = r'''#!/usr/bin/env python3
+import json, os, sys
+d = os.environ["STUB_DIR"]; st = os.path.join(d, "codex-state.json")
+s = json.load(open(st)) if os.path.exists(st) else {"mk": {}, "plugins": []}
+open(os.path.join(d, "codex-calls.log"), "a").write(" ".join(sys.argv[1:]) + "\n")
+a = sys.argv[1:]
+if a[:3] == ["plugin", "marketplace", "list"]:
+    print("MARKETPLACE  ROOT"); [print(f"{k}  {v}") for k, v in s["mk"].items()]
+elif a[:3] == ["plugin", "marketplace", "add"]: s["mk"]["jev-kit"] = a[3]
+elif a[:3] == ["plugin", "marketplace", "remove"]: s["mk"].pop(a[3], None)
+elif a[:2] == ["plugin", "list"]: [print(f"{p}  installed, enabled  0.0.0  /x") for p in s["plugins"]]
+elif a[:2] == ["plugin", "add"]: s["plugins"] = sorted(set(s["plugins"]) | {a[2]})
+elif a[:2] == ["plugin", "remove"]: s["plugins"] = [p for p in s["plugins"] if p != a[2]]
+json.dump(s, open(st, "w"))
+'''
+
 STUB_CLAUDE = r'''#!/usr/bin/env python3
 import json, os, sys
 d = os.environ["STUB_DIR"]; st = os.path.join(d, "state.json")
@@ -38,7 +54,7 @@ class InstallTests(unittest.TestCase):
         self.bin = self.tmp / "bin"
         self.home.mkdir(); self.bin.mkdir()
         (self.bin / "claude").write_text(STUB_CLAUDE); (self.bin / "claude").chmod(0o755)
-        (self.bin / "codex").write_text("#!/bin/sh\nexit 0\n"); (self.bin / "codex").chmod(0o755)
+        (self.bin / "codex").write_text(STUB_CODEX); (self.bin / "codex").chmod(0o755)
         (self.home / ".codex").mkdir()
         self.iterm = {"type": "command", "command": "/Users/x/.config/iterm2/cc-status"}
         (self.home / ".codex" / "hooks.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [self.iterm]}]}}))
@@ -50,6 +66,10 @@ class InstallTests(unittest.TestCase):
 
     def calls(self):
         p = self.tmp / "calls.log"
+        return p.read_text().splitlines() if p.exists() else []
+
+    def codex_calls(self):
+        p = self.tmp / "codex-calls.log"
         return p.read_text().splitlines() if p.exists() else []
 
     def codex_hooks(self):
@@ -66,17 +86,22 @@ class InstallTests(unittest.TestCase):
         self.assertIn("plugin marketplace add " + str(KIT), self.calls())
         self.assertIn("plugin install jev@jev-kit", self.calls())
 
-    def test_codex_hooks_added_idempotently_and_others_kept(self):
+    def test_codex_uses_the_plugin_not_hooks_json(self):
         self.run_install("install", "--options", "jev", "--key-stdin", stdin=KEY + "\n")
         p = self.run_install("install")  # 두 번째: 모드는 기존 값(jev) 유지
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        h = self.codex_hooks()
-        ours = lambda ev: [x for g in h.get(ev, []) for x in g["hooks"] if "kit/options/jev_options.py" in x["command"]]
-        self.assertEqual(len(ours("Stop")), 1)
-        self.assertEqual(len(ours("SessionStart")), 1)
-        self.assertIn(self.iterm, [x for g in h["Stop"] for x in g["hooks"]])
-        self.assertIn("plugin update jev@jev-kit", self.calls())  # 두 번째 실행은 갱신
+        self.assertEqual(self.codex_hooks(), {"Stop": [{"hooks": [self.iterm]}]})  # hooks.json에는 아무것도 넣지 않는다
+        self.assertEqual(self.codex_calls().count("plugin marketplace add " + str(KIT)), 1)  # 두 번째에는 이미 등록됨
+        self.assertEqual(self.codex_calls().count("plugin add jev@jev-kit"), 2)  # 매번 현재 버전으로 다시 복사
+        self.assertIn("plugin update jev@jev-kit", self.calls())  # Claude 쪽 두 번째 실행은 갱신
         self.assertIn(f"TYPESAFE_API_KEY={KEY}", (self.home / ".config" / "jev" / "env").read_text())  # 키 유지
+
+    def test_codex_legacy_hooks_json_entries_removed(self):
+        legacy = {"type": "command", "command": 'python3 "/old/kit/options/jev_options.py"', "timeout": 10}
+        (self.home / ".codex" / "hooks.json").write_text(json.dumps({"hooks": {"Stop": [{"hooks": [self.iterm]}, {"hooks": [legacy]}], "SessionStart": [{"hooks": [legacy]}]}}))
+        self.run_install("install", "--options", "jev", "--key-stdin", stdin=KEY + "\n")
+        self.assertEqual(self.codex_hooks(), {"Stop": [{"hooks": [self.iterm]}]})
+        self.assertTrue(list((self.home / ".codex").glob("hooks.json.bak-*")))
 
     def test_legacy_manual_setup_is_migrated(self):
         (self.home / ".claude").mkdir()
@@ -102,24 +127,26 @@ class InstallTests(unittest.TestCase):
         self.assertIn(f"JEV_OPTIONS_ENV_FILE={(self.tmp / 'proj.env').resolve()}", cfg)
         self.assertNotIn("TYPESAFE_API_KEY=", cfg)
 
-    def test_off_mode_adds_no_codex_hooks(self):
-        self.run_install("install", "--options", "off")
-        self.assertEqual(self.codex_hooks(), {"Stop": [{"hooks": [self.iterm]}]})
-
     def test_uninstall_and_purge(self):
         self.run_install("install", "--options", "jev", "--key-stdin", stdin=KEY + "\n")
         p = self.run_install("uninstall")
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
-        self.assertEqual(self.codex_hooks(), {"Stop": [{"hooks": [self.iterm]}]})
         cfg = self.home / ".config" / "jev" / "env"
         self.assertIn("JEV_OPTIONS=off", cfg.read_text())
         self.assertIn(KEY, cfg.read_text())  # 끄기만 하면 키는 남는다
         self.run_install("uninstall", "--purge")
         self.assertFalse(cfg.exists())
         self.assertIn("plugin uninstall jev@jev-kit", self.calls())
+        self.assertIn("plugin remove jev@jev-kit", self.codex_calls())
 
     def test_doctor_reports_without_key(self):
         self.run_install("install", "--options", "jev", "--key-stdin", stdin=KEY + "\n")
+        p = self.run_install("doctor")
+        self.assertEqual(p.returncode, 1)
+        self.assertIn("✗ Codex 플러그인 hook 신뢰: 없음", p.stdout)  # 신뢰 전에는 문제로 표시
+        (self.home / ".codex" / "config.toml").write_text(
+            '[hooks.state."jev@jev-kit:hooks/hooks.json:session_start:0:0"]\ntrusted_hash = "x"\n'
+            '[hooks.state."jev@jev-kit:hooks/hooks.json:stop:0:0"]\ntrusted_hash = "y"\n')
         p = self.run_install("doctor")
         self.assertEqual(p.returncode, 0, p.stdout + p.stderr)
         self.assertIn("키 설정 파일", p.stdout)

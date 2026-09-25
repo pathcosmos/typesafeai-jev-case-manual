@@ -1,7 +1,7 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
 > 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> kit 0.1.23 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
+> kit 0.1.24 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
@@ -19,7 +19,7 @@
    ```
 4. 절차 8단계의 케이스 문서 사본은 KIT의 `cases/`에 쓴다. KIT가 읽기 전용이면(샌드박스, 플러그인 캐시) 사용자에게 알리고 내용을 전달한다.
 
-Claude Code에서는 플러그인으로 설치하면 `/jev:apply`가 같은 절차를 실행한다. **새 기기에는 설치 스크립트 하나로** 플러그인, 선택지 hook, Codex hook을 함께 연결한다 ([kit/options/README](kit/options/README.md#설치와-켜기-installsh)):
+Claude Code와 Codex 모두 같은 플러그인 `jev@jev-kit`로 설치하면 `/jev:apply` 스킬이 같은 절차를 실행한다. **새 기기에는 설치 스크립트 하나로** 두 에이전트에 플러그인(스킬, 선택지 hook)을 함께 연결한다 ([kit/options/README](kit/options/README.md#설치와-켜기-installsh)):
 ```bash
 curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manual/main/install.sh | bash -s -- --options jev
 ```
