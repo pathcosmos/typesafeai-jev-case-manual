@@ -9,7 +9,10 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
 요청과 가장 맞는 선택지 (Choice, 판정이 아니라 요청 부합). 결정은 사람이 한다.
 
 환경변수 (hook 프로세스에 전달되어야 한다):
-  JEV_OPTIONS          off(기본) | fake   — fake는 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다. 실제 Jev 모드는 아직 없다
+  JEV_OPTIONS          off(기본) | fake | jev
+                       fake: 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다
+                       jev:  TYPESAFE_API_KEY가 있을 때만 api.typesafe.ai에 요청 1건을 보낸다 (요청 텍스트, 선택지 앞 문맥, 선택지).
+                             키가 없거나 실패하면 아무것도 표시하지 않는다. 시간 상한 JEV_OPTIONS_TIMEOUT(초, 기본 4)
   JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (기본 끔, 화면 미반영 확인, 권장하지 않음)
   JEV_OPTIONS_LOG      경로를 주면 만든 Jev 요청(state 포함)을 로컬 JSONL로 남긴다 (검토용, 외부 전송 없음)
 표준 라이브러리만 쓴다. 어떤 오류가 나도 에이전트를 막지 않는다 (종료 코드 0, 출력 없음).
@@ -17,6 +20,9 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
 from __future__ import annotations
 
 import hashlib
+import time
+import urllib.error
+import urllib.request
 import json
 import os
 import re
@@ -162,10 +168,44 @@ def fake_scores(req: dict) -> dict:
     return {"model": "FAKE (" + MODEL + " 요청 형식)", "answers": answers}
 
 
-def score(req: dict, mode: str) -> dict | None:
+def jev_scores(req: dict, env: dict) -> dict | None:
+    """실제 Jev 호출 1건 (재시도 없음: hook은 턴을 늦추면 안 된다). 키는 환경변수에서만 읽고 어디에도 쓰지 않는다."""
+    key = (env.get("TYPESAFE_API_KEY") or "").strip()
+    if not key:
+        sys.stderr.write("jev-options: TYPESAFE_API_KEY가 없어서 점수를 건너뛴다\n")
+        return None
+    base = (env.get("TYPESAFE_BASE_URL") or "https://api.typesafe.ai").rstrip("/")
+    try:
+        timeout = float(env.get("JEV_OPTIONS_TIMEOUT") or 4)
+    except ValueError:
+        timeout = 4.0
+    http = urllib.request.Request(base + "/v1/systemone", data=json.dumps(req).encode("utf-8"), method="POST",
+                                  headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json",
+                                           "User-Agent": f"jev-kit-options/{VERSION}"})
+    t0 = time.monotonic()
+    try:
+        with urllib.request.urlopen(http, timeout=timeout) as r:
+            data = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        sys.stderr.write(f"jev-options: HTTP {e.code} ({'auth' if e.code in (401, 403) else 'request' if e.code in (400, 422) else 'capacity' if e.code == 429 or e.code >= 500 else 'other'})\n")
+        return None
+    except (urllib.error.URLError, TimeoutError, OSError, ValueError) as e:
+        sys.stderr.write(f"jev-options: {type(e).__name__} (connection/timeout)\n")
+        return None
+    answers = data.get("answers") or {}
+    if "best_match" not in answers or any(q not in answers for q in req["questions"]):
+        sys.stderr.write("jev-options: 응답에 질문 답이 빠졌다\n")
+        return None
+    data["latency_ms"] = round((time.monotonic() - t0) * 1000)
+    return data
+
+
+def score(req: dict, mode: str, env: dict | None = None) -> dict | None:
     if mode == "fake":
         return fake_scores(req)
-    return None  # 실제 Jev 모드는 키와 평가 후에 붙인다 (research/agent-choice-scoring.md §5)
+    if mode == "jev":
+        return jev_scores(req, env or {})
+    return None
 
 
 # ---------------- 표시 ----------------
@@ -214,7 +254,7 @@ def log_request(req: dict, event: str, env: dict):
 # ---------------- hook 진입점 ----------------
 def handle(payload: dict, env: dict) -> dict | None:
     mode = (env.get("JEV_OPTIONS") or "off").strip().lower()
-    if mode not in ("fake",):
+    if mode not in ("fake", "jev"):
         return None
     event = payload.get("hook_event_name")
     user_request = last_user_text(payload.get("transcript_path"))
@@ -227,7 +267,7 @@ def handle(payload: dict, env: dict) -> dict | None:
         options, context = found
         req = build_request(options, user_request, context)
         log_request(req, event, env)
-        resp = score(req, mode)
+        resp = score(req, mode, env)
         return {"systemMessage": render(options, resp, mode)} if resp else None
     if event == "PreToolUse" and payload.get("tool_name") == "AskUserQuestion":
         ti = payload.get("tool_input") or {}
@@ -235,7 +275,7 @@ def handle(payload: dict, env: dict) -> dict | None:
         for question, options in ask_user_options(ti):
             req = build_request(options, user_request, question)
             log_request(req, event, env)
-            resp = score(req, mode)
+            resp = score(req, mode, env)
             if not resp:
                 return None
             per_q.append({"answers": resp["answers"], "fake": mode == "fake"})

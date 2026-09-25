@@ -5,7 +5,10 @@ import json
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 import unittest
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -114,7 +117,7 @@ class RequestAndScoreTests(unittest.TestCase):
 class HookTests(unittest.TestCase):
     def test_off_by_default(self):
         self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO}, {}))
-        self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO}, {"JEV_OPTIONS": "jev"}))  # 실제 모드는 아직 없다
+        self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO}, {"JEV_OPTIONS": "jev"}))  # 키가 없으면 아무것도 안 한다
 
     def test_stop_claude_payload_with_transcript(self):
         tmp = Path(tempfile.mkdtemp()) / "t.jsonl"
@@ -159,6 +162,65 @@ class HookTests(unittest.TestCase):
                                env={"JEV_OPTIONS": "fake", "PATH": "/usr/bin:/bin"})
             self.assertEqual(p.returncode, 0, stdin)
         self.assertIn("systemMessage", p.stdout)
+
+
+class MockJev(BaseHTTPRequestHandler):
+    mode, calls = "ok", []
+
+    def log_message(self, *a):
+        pass
+
+    def do_POST(self):
+        body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        MockJev.calls.append({"auth": self.headers.get("Authorization"), "body": body})
+        if MockJev.mode == "401":
+            self.send_response(401); self.end_headers(); self.wfile.write(b'{"error":"bad key"}'); return
+        if MockJev.mode == "slow":
+            time.sleep(1.5)
+        answers = {}
+        for qid, q in body["questions"].items():
+            if q["type"] == "noul":
+                answers[qid] = {"type": "noul", "noul": 0.9}
+            else:
+                keys = list(q["criteria"])
+                answers[qid] = {"type": "choice", "choice": keys[0], "probabilities": {k: (0.8 if i == 0 else round(0.2 / (len(keys) - 1), 2)) for i, k in enumerate(keys)}}
+        if MockJev.mode == "partial":
+            answers.pop("in_scope_1")
+        out = json.dumps({"model": body["model"], "answers": answers, "usage": {"input_tokens": 300}}).encode()
+        self.send_response(200); self.send_header("Content-Type", "application/json"); self.end_headers(); self.wfile.write(out)
+
+
+class JevModeTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = ThreadingHTTPServer(("127.0.0.1", 0), MockJev)
+        threading.Thread(target=cls.server.serve_forever, daemon=True).start()
+        cls.env = {"JEV_OPTIONS": "jev", "TYPESAFE_API_KEY": "test-key", "TYPESAFE_BASE_URL": f"http://127.0.0.1:{cls.server.server_address[1]}"}
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.server.shutdown()
+
+    def setUp(self):
+        MockJev.mode, MockJev.calls = "ok", []
+
+    def test_real_mode_one_request_pinned_model_and_no_fake_tag(self):
+        out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, self.env)
+        self.assertEqual(len(MockJev.calls), 1)
+        self.assertEqual(MockJev.calls[0]["auth"], "Bearer test-key")
+        self.assertEqual(MockJev.calls[0]["body"]["model"], "jev-1.13.0")
+        self.assertTrue(out["systemMessage"].startswith("Jev 선택지 점검"))  # 가짜 태그 없음
+        self.assertIn("1 Retry the request in th… 0.80/0.90/0.90", out["systemMessage"])
+
+    def test_no_key_sends_nothing(self):
+        env = {k: v for k, v in self.env.items() if k != "TYPESAFE_API_KEY"}
+        self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, env))
+        self.assertEqual(MockJev.calls, [])
+
+    def test_failures_show_nothing(self):
+        for mode, extra in (("401", {}), ("partial", {}), ("slow", {"JEV_OPTIONS_TIMEOUT": "0.5"})):
+            MockJev.mode = mode
+            self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, {**self.env, **extra}), mode)
 
 
 if __name__ == "__main__":

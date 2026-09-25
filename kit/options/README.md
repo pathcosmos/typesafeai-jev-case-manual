@@ -1,4 +1,4 @@
-# options — 에이전트 선택지에 Jev 속성 확률 표시 (1차: 가짜 점수)
+# options — 에이전트 선택지에 Jev 속성 확률 표시
 
 코딩 에이전트가 선택지를 제시하면, 선택지마다 **요청 부합 / 범위 안 / 되돌리기 쉬움** 확률을 한 줄씩 보여 주는 hook이다. "어느 것이 옳은가"는 묻지 않는다. 조사와 근거: [research/agent-choice-scoring.md](../../research/agent-choice-scoring.md).
 
@@ -8,7 +8,7 @@
 
 (실제 출력. 값은 입력 해시로 만든 가짜라 의미가 없다.)
 
-**지금은 가짜 점수만 있다.** `JEV_OPTIONS=fake`는 실제 Jev 요청과 같은 모양을 만들고 결정적인 가짜 값을 채운다. **외부로 아무것도 보내지 않는다.** 실제 Jev 모드는 키와 평가 뒤에 붙인다.
+모드는 둘이다. `JEV_OPTIONS=fake`는 실제 요청과 같은 모양에 결정적인 가짜 값을 채우고 **외부로 아무것도 보내지 않는다.** `JEV_OPTIONS=jev`는 `TYPESAFE_API_KEY`가 있을 때만 **요청 1건**을 api.typesafe.ai로 보낸다. 보내는 것은 마지막 사용자 요청, 선택지 앞 문맥(최대 12줄), 선택지 텍스트다 (필드당 2,000자 상한). 키가 없거나 실패(401, 타임아웃, 응답 누락)하면 **아무것도 표시하지 않고** 에이전트를 막지 않는다. 재시도하지 않고 시간 상한은 `JEV_OPTIONS_TIMEOUT`(기본 4초)이다. 실제 모드 출력에는 `[가짜 점수]` 태그가 없다.
 
 ## 연결 (플러그인에 자동 등록하지 않는다)
 
@@ -51,9 +51,11 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 
 | 변수 | 값 |
 | --- | --- |
-| `JEV_OPTIONS` | `off`(기본) · `fake` |
+| `JEV_OPTIONS` | `off`(기본) · `fake` · `jev` (키 필요, 외부 전송) |
 | `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다. **권장하지 않는다**: 도구 입력은 바뀌지만 데스크톱 앱 대화상자 화면에는 보이지 않았다 (CLI 화면은 미확인) |
 | `JEV_OPTIONS_LOG` | 만든 요청(state 포함)을 쓸 로컬 JSONL 경로. 무엇이 보내질지 검토용 |
+| `TYPESAFE_API_KEY` | 실제 모드에 필요. 환경변수에서만 읽고 어디에도 쓰지 않는다 |
+| `JEV_OPTIONS_TIMEOUT` | 실제 모드의 요청 시간 상한(초). 기본 4 |
 
 어떤 오류가 나도 종료 코드 0, 출력 없음 (에이전트를 막지 않는다). 오류는 stderr에만 남는다.
 
@@ -77,7 +79,8 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 
 ## 확인한 것
 
-- 단위 테스트 17개 (`python3 -m unittest kit/options/test_jev_options.py`): 한국어·영어 선택지, 작업 단계 목록과 코드 블록 제외, 떨어진 문단의 질문 제외, 한 요청 fan-out과 no-match, 가짜 점수의 결정성, 기본 꺼짐, Claude·Codex Stop payload, AskUserQuestion 표시와 선택적 수정(원본 불변), 잘못된 입력에서도 종료 코드 0.
+- 단위 테스트 20개 (실제 모드는 로컬 mock 서버로: 요청 1건·모델 고정·키 헤더, 키 없으면 전송 없음, 401·응답 누락·타임아웃이면 표시 없음) (`python3 -m unittest kit/options/test_jev_options.py`): 한국어·영어 선택지, 작업 단계 목록과 코드 블록 제외, 떨어진 문단의 질문 제외, 한 요청 fan-out과 no-match, 가짜 점수의 결정성, 기본 꺼짐, Claude·Codex Stop payload, AskUserQuestion 표시와 선택적 수정(원본 불변), 잘못된 입력에서도 종료 코드 0.
 - 실제 Claude Code(헤드리스)에 Stop hook으로 연결: 선택지 3개를 찾고, transcript에서 사용자 요청을 읽어 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인).
 - **대화형 CLI 세션 (2026-09-25)**: PreToolUse와 Stop의 `systemMessage`가 모두 기록·표시됐다 (`hook_system_message`). hook 실행 43~55ms. 전역 표시 규약을 따른 응답에서 선택지를 정확히 잡았다 ([research §4.1](../../research/agent-choice-scoring.md#41-대화형-실측-2026-09-25-claude-code-cli-가짜-점수)).
 - **데스크톱 앱 Code 탭 (2026-09-25)**: 두 hook이 실행됐다. 대화상자 경로의 `systemMessage`는 "Claude Code 알림"으로, Stop의 `systemMessage`는 대화 흐름에 줄마다 `Stop says:`가 붙어 표시돼서 표시를 한 줄 형식으로 바꿨다. 선택지 설명 수정(`JEV_OPTIONS_REWRITE`)은 **대화상자 화면에 보이지 않았다** ([research §4.2](../../research/agent-choice-scoring.md#42-데스크톱-앱-실측-2026-09-25)).
+- **실제 Jev (2026-09-25)**: 합성 선택지로 확인했다. 대화 기록에 사용자 요청이 있으면 뜻이 맞게 나온다: "실측 결과 정리해 줘"에 "결과 기록" 0.97/0.89/0.81, "main에 강제 push" 0.00/0.07/0.36. 요청이 없으면(`(not available)`) Choice가 설계대로 "해당 없음"(0.98~1.00)을 준다. 틀린 키는 표시 없이 stderr에 `HTTP 401 (auth)`만 남는다.
