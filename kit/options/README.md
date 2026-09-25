@@ -38,7 +38,7 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 | hook | 입력 | 하는 일 |
 | --- | --- | --- |
 | `Stop` | `last_assistant_message` (Claude Code 실측, Codex 문서) | 마지막 번호 목록(2~9개)을 선택지로 본다. **선택 신호가 목록에 붙어 있을 때만**: 바로 앞 도입 줄, 또는 바로 뒤 짧은 질문 줄. 코드 블록 안은 무시. `stop_hook_active`면 아무것도 안 한다 |
-| `PreToolUse` `AskUserQuestion` | `questions[].options[]` | 질문마다 점수를 `systemMessage`로 보여 준다. `JEV_OPTIONS_REWRITE=1`이면 선택지 설명 앞에 점수를 붙인다 (**실험적**: 대화상자에 반영되는지 미확인) |
+| `PreToolUse` `AskUserQuestion` | `questions[].options[]` (실측 스키마: `question`, `header`, `options[{label, description}]`, `multiSelect`) | 질문마다 점수를 `systemMessage`로 보여 준다. `JEV_OPTIONS_REWRITE=1`이면 선택지 설명 앞에 점수를 붙인다. **대화형 CLI에서 대화상자에 반영됨을 확인했다.** 모델은 고른 label만 받으므로 점수가 모델에 새지 않는다 |
 
 사용자 요청 텍스트는 Claude Code의 `transcript_path`에서 마지막 사용자 메시지(도구 결과 제외)를 읽는다. 없으면 `(not available)`.
 
@@ -55,7 +55,7 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 | 변수 | 값 |
 | --- | --- |
 | `JEV_OPTIONS` | `off`(기본) · `fake` |
-| `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명을 고친다 (실험적) |
+| `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (대화형 CLI에서 확인) |
 | `JEV_OPTIONS_LOG` | 만든 요청(state 포함)을 쓸 로컬 JSONL 경로. 무엇이 보내질지 검토용 |
 
 어떤 오류가 나도 종료 코드 0, 출력 없음 (에이전트를 막지 않는다). 오류는 stderr에만 남는다.
@@ -81,4 +81,5 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 ## 확인한 것
 
 - 단위 테스트 17개 (`python3 -m unittest kit/options/test_jev_options.py`): 한국어·영어 선택지, 작업 단계 목록과 코드 블록 제외, 떨어진 문단의 질문 제외, 한 요청 fan-out과 no-match, 가짜 점수의 결정성, 기본 꺼짐, Claude·Codex Stop payload, AskUserQuestion 표시와 선택적 수정(원본 불변), 잘못된 입력에서도 종료 코드 0.
-- 실제 Claude Code(헤드리스)에 Stop hook으로 연결: 선택지 3개를 찾고, transcript에서 사용자 요청을 읽어 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인). `systemMessage` 화면 표시는 헤드리스라 확인하지 못했다.
+- 실제 Claude Code(헤드리스)에 Stop hook으로 연결: 선택지 3개를 찾고, transcript에서 사용자 요청을 읽어 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인).
+- **대화형 CLI 세션 (2026-09-25)**: AskUserQuestion 대화상자에 점수가 붙은 설명이 표시되고, PreToolUse와 Stop의 `systemMessage`가 모두 화면에 나왔다. hook 실행 43~55ms. 전역 표시 규약을 따른 응답에서 선택지를 정확히 잡았다 ([research §4.1](../../research/agent-choice-scoring.md#41-대화형-실측-2026-09-25-claude-code-cli-가짜-점수)). 데스크톱 앱(Code 탭) 표시는 아직 확인하지 않았다.
