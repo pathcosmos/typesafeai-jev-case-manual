@@ -14,6 +14,7 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
                        jev:  TYPESAFE_API_KEY가 있을 때만 api.typesafe.ai에 요청 1건을 보낸다 (요청 텍스트, 선택지 앞 문맥, 선택지).
                              키가 없거나 실패하면 아무것도 표시하지 않는다. 시간 상한 JEV_OPTIONS_TIMEOUT(초, 기본 4)
   JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (기본 끔, 화면 미반영 확인, 권장하지 않음)
+  JEV_OPTIONS_ENV_FILE TYPESAFE_API_KEY가 환경에 없을 때 이 dotenv 파일에서 그 한 줄만 읽는다 (키를 hook 설정에 복사하지 않기 위해)
   JEV_OPTIONS_LOG      경로를 주면 만든 Jev 요청(state 포함)을 로컬 JSONL로 남긴다 (검토용, 외부 전송 없음)
 표준 라이브러리만 쓴다. 어떤 오류가 나도 에이전트를 막지 않는다 (종료 코드 0, 출력 없음).
 """
@@ -169,9 +170,25 @@ def fake_scores(req: dict) -> dict:
     return {"model": "FAKE (" + MODEL + " 요청 형식)", "answers": answers}
 
 
+def key_from_env_file(path: str | None) -> str:
+    """dotenv 파일에서 TYPESAFE_API_KEY 한 줄만 읽는다. 다른 줄은 보지 않는다. 없거나 못 읽으면 빈 문자열."""
+    if not path:
+        return ""
+    try:
+        for line in Path(os.path.expanduser(path)).read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("export "):
+                line = line[7:].lstrip()
+            if line.startswith("TYPESAFE_API_KEY="):
+                return line.split("=", 1)[1].strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return ""
+
+
 def jev_scores(req: dict, env: dict) -> dict | None:
-    """실제 Jev 호출 1건 (재시도 없음: hook은 턴을 늦추면 안 된다). 키는 환경변수에서만 읽고 어디에도 쓰지 않는다."""
-    key = (env.get("TYPESAFE_API_KEY") or "").strip()
+    """실제 Jev 호출 1건 (재시도 없음: hook은 턴을 늦추면 안 된다). 키는 환경변수(또는 JEV_OPTIONS_ENV_FILE)에서만 읽고 어디에도 쓰지 않는다."""
+    key = (env.get("TYPESAFE_API_KEY") or "").strip() or key_from_env_file(env.get("JEV_OPTIONS_ENV_FILE"))
     if not key:
         sys.stderr.write("jev-options: TYPESAFE_API_KEY가 없어서 점수를 건너뛴다\n")
         return None

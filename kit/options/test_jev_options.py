@@ -250,6 +250,16 @@ class JevModeTests(unittest.TestCase):
         self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, env))
         self.assertEqual(MockJev.calls, [])
 
+    def test_key_from_env_file_only_that_line(self):
+        f = Path(tempfile.mkdtemp()) / ".env"
+        f.write_text('OTHER_SECRET=nope\nexport TYPESAFE_API_KEY="file-key"\n', encoding="utf-8")
+        env = {k: v for k, v in self.env.items() if k != "TYPESAFE_API_KEY"}
+        out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, {**env, "JEV_OPTIONS_ENV_FILE": str(f)})
+        self.assertIsNotNone(out)
+        self.assertEqual(MockJev.calls[-1]["auth"], "Bearer file-key")
+        self.assertEqual(jo.key_from_env_file(str(f) + ".missing"), "")
+        self.assertEqual(jo.key_from_env_file(None), "")
+
     def test_failures_show_nothing(self):
         for mode, extra in (("401", {}), ("partial", {}), ("slow", {"JEV_OPTIONS_TIMEOUT": "0.5"})):
             MockJev.mode = mode

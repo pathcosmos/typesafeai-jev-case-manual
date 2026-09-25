@@ -30,6 +30,11 @@
 
 hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 
+**전역 실제 모드 예 (이 머신, 2026-09-25):** 키를 설정 파일에 복사하지 않고 `JEV_OPTIONS_ENV_FILE`로 한 곳에서 읽는다. 기존 hook은 그대로 두고 **추가만** 했다 (백업: `*.bak-<시각>`).
+- Claude Code `~/.claude/settings.json`: `env`에 `JEV_OPTIONS=jev`, `JEV_OPTIONS_ENV_FILE=<.env 경로>`. `Stop`과 `PreToolUse`(`AskUserQuestion`)에 `python3 KIT/kit/options/jev_options.py` (timeout 10).
+- Codex `~/.codex/hooks.json`: `Stop`에 `JEV_OPTIONS=jev JEV_OPTIONS_ENV_FILE=<.env 경로> python3 KIT/kit/options/jev_options.py` (Codex 명령은 셸로 실행된다). **새 hook은 Codex CLI의 `/hooks`에서 신뢰(trust)해야 실행된다.**
+- 끄기: Claude는 `env.JEV_OPTIONS`를 `off`로 바꾸거나 hook 항목을 지운다. Codex는 `/hooks`에서 끄거나 항목을 지운다.
+
 ## 동작
 
 | hook | 입력 | 하는 일 |
@@ -55,6 +60,7 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 | --- | --- |
 | `JEV_OPTIONS` | `off`(기본) · `fake` · `jev` (키 필요, 외부 전송) |
 | `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다. **권장하지 않는다**: 도구 입력은 바뀌지만 데스크톱 앱 대화상자 화면에는 보이지 않았다 (CLI 화면은 미확인) |
+| `JEV_OPTIONS_ENV_FILE` | `TYPESAFE_API_KEY`가 환경에 없을 때 이 dotenv 파일에서 **그 한 줄만** 읽는다. 키를 hook 설정에 복사하지 않고 한 곳(예: 프로젝트 `.env`)에만 둘 때 쓴다 |
 | `JEV_OPTIONS_LOG` | 만든 요청(state 포함)을 쓸 로컬 JSONL 경로. 무엇이 보내질지 검토용 |
 | `TYPESAFE_API_KEY` | 실제 모드에 필요. 환경변수에서만 읽고 어디에도 쓰지 않는다 |
 | `JEV_OPTIONS_TIMEOUT` | 실제 모드의 요청 시간 상한(초). 기본 4 |
