@@ -18,7 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `manual/` — 도입 매뉴얼: 적합성 판단 → 질문 설계 체크리스트 → 조합 → 평가·임계값 → 운영(비용, 지연, 재시도)
 - `cases/` — 우리 프로젝트별 적용안 (프로젝트당 1문서, `templates/`의 케이스 템플릿을 따른다)
 - `templates/` — 케이스 문서(`case.md`), 평가셋(`evalset.md`) 템플릿
-- `research/` — 공식 문서 밖의 조사 자료 (생태계, 현장 gotcha, 도메인별 외부 레퍼런스). 신뢰도 태그를 붙인다
+- `research/` — 공식 문서 밖의 조사 자료 (생태계, 현장 gotcha, 도메인별 외부 레퍼런스, 에이전트 선택지 점수 타당성). 신뢰도 태그를 붙인다
 - `sources.md` — 조사한 모든 출처 (URL, 확인일, 모델·SDK 버전)
 
 ## 조사 방법 (live docs가 진실의 원천)
@@ -64,5 +64,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `research/`의 커뮤니티 자료는 신뢰도 태그([O]/[3P]/[C]/[?])를 유지한다. [C]나 [?] 수치를 공식 사실처럼 인용하지 않는다.
 - `sources.md`의 "불일치 · 미확인 항목"(D1~D13)은 사실로 인용하지 않는다. live docs를 다시 확인할 때 이 표를 갱신한다.
 - **live docs 변화 점검**: `python3 kit/freshness/check_docs.py` (주간 리포트와 같은 것). 리포트의 페이지를 읽고 지식 베이스를 고친 뒤 sources.md 확인일을 갱신하고, 마지막에 `--update-baseline`을 실행한다. 리포트만 보고 기준선을 먼저 갱신하지 않는다. sources.md에 추적 페이지를 추가해도 기준선을 갱신한다.
-- `cases/`는 킷 절차 8단계가 실제 적용 결과로 만든다 (사본). 적용 대상 프로젝트는 추측해서 고르지 말고 사용자에게 확인한다. INTENT.md §8의 열린 질문은 2026-09-25에 모두 결정되었다 (Q6 완료: `templates/evalset.md`, `kit/eval/`. Q7: `kit/freshness/`).
+- `cases/`는 킷 절차 8단계가 실제 적용 결과로 만든다 (사본). 적용 대상 프로젝트는 추측해서 고르지 말고 사용자에게 확인한다. INTENT.md §8의 열린 질문은 2026-09-25에 모두 결정되었다 (Q6 완료: `templates/evalset.md`, `kit/eval/`. Q7: `kit/freshness/`. 확장: 에이전트 선택지 점수 hook `kit/options/` 1차, 가짜 점수).
 - git 저장소다 (브랜치 `main`). `.remember/`는 커밋하지 않는다.

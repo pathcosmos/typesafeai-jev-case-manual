@@ -10,6 +10,8 @@ echo "== eval (build, replay)"
 python3 -m unittest kit/eval/test_build.py kit/eval/test_replay.py
 echo "== freshness (오프라인)"
 python3 -m unittest kit/freshness/test_check_docs.py
+echo "== options hook (가짜 점수)"
+python3 -m unittest kit/options/test_jev_options.py
 echo "== check"
 python3 -m unittest kit/check/test_check.py
 bash kit/scaffolds/verify.sh "${1:-all}"

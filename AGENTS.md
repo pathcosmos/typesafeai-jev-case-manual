@@ -1,7 +1,7 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
 > 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> kit 0.1.13 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
+> kit 0.1.14 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
@@ -72,6 +72,7 @@ KIT=/Users/lanco/taketimes/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 
 | PR이나 설계 리뷰 | [manual/06-review-checklist](manual/06-review-checklist.md) |
 | 특정 도메인의 외부 근거 | [research/domain-practice](research/domain-practice.md) (프로그램 개발 / AI 에이전트 / 데이터 엔지니어링 / ML·DL / LLM 프로덕션) |
 | 이상한 에러나 동작 | [research/ecosystem §1](research/ecosystem.md#1-현장-gotcha-공식-문서와-실제-동작이-다른-곳) |
+| 에이전트(Claude Code, Codex)의 선택지에 Jev 확률 붙이기 | [research/agent-choice-scoring](research/agent-choice-scoring.md) → [kit/options](kit/options/README.md) |
 
 전체 기능 레퍼런스의 인덱스는 [reference/README](reference/README.md)다 (한도 치트시트, 한국어 주의, SDK 간 차이 포함).
 
