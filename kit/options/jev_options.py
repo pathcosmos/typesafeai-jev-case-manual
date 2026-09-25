@@ -3,14 +3,14 @@
 
 Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)를 받고, 보여 줄 것이 있으면 stdout에 hook 출력 JSON을 쓴다.
 - Stop: `last_assistant_message`에서 번호 목록 선택지를 코드로 찾는다 (Claude Code 실측, Codex 문서).
-- PreToolUse(AskUserQuestion): 구조화된 선택지를 읽는다. 선택지 설명에 점수를 붙이는 것은 실험적이다 (JEV_OPTIONS_REWRITE=1).
+- PreToolUse(AskUserQuestion): 구조화된 선택지를 읽는다. 점수는 systemMessage로 보여 준다. 선택지 설명에 점수를 붙이는 JEV_OPTIONS_REWRITE=1은 도구 입력만 바꾸고 데스크톱 대화상자 화면에는 보이지 않았다 (권장하지 않음).
 
 무엇을 묻나: "어느 선택지가 옳은가"가 아니라 선택지마다 좁은 속성을 묻는다 (Noul: 요청 범위 안인가, 되돌리기 쉬운가)와
 요청과 가장 맞는 선택지 (Choice, 판정이 아니라 요청 부합). 결정은 사람이 한다.
 
 환경변수 (hook 프로세스에 전달되어야 한다):
   JEV_OPTIONS          off(기본) | fake   — fake는 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다. 실제 Jev 모드는 아직 없다
-  JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (실험적, 기본 끔)
+  JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (기본 끔, 화면 미반영 확인, 권장하지 않음)
   JEV_OPTIONS_LOG      경로를 주면 만든 Jev 요청(state 포함)을 로컬 JSONL로 남긴다 (검토용, 외부 전송 없음)
 표준 라이브러리만 쓴다. 어떤 오류가 나도 에이전트를 막지 않는다 (종료 코드 0, 출력 없음).
 """

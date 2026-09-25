@@ -16,7 +16,7 @@
 | 경로 | Claude Code | Codex |
 | --- | --- | --- |
 | 텍스트 선택지 (가장 흔함) | **[실측]** Stop hook 입력에 `last_assistant_message`(마지막 응답 전문)와 `transcript_path`, `stop_hook_active`가 있다. 헤드리스(`claude -p`)에서 확인 | **[O]** Stop 입력에 `last_assistant_message`, `stop_hook_active` ([hooks](https://learn.chatgpt.com/docs/hooks)) |
-| 선택 대화상자 | AskUserQuestion. **[실측, 대화형 CLI 2026-09-25]** PreToolUse matcher `AskUserQuestion`이 동작한다. `tool_input`은 `{questions: [{question, header, options: [{label, description}], multiSelect}]}`. `updatedInput`으로 바꾼 선택지 설명이 **도구 실행에 그대로 쓰였다** (`toolUseResult.questions`에 수정된 설명이 남음). 모델이 받는 도구 결과에는 선택한 label만 있어서 **점수가 모델에게 가지 않는다**. 헤드리스(`claude -p`)에는 이 도구가 없다 | `request_user_input`. **[3P]** PreToolUse matcher `^request_user_input$` 사용 예 ([thurbox#1165](https://github.com/Thurbeen/thurbox/pull/1165)). 기본은 Plan 모드에서만 나온다 ([codex#30150](https://github.com/openai/codex/issues/30150)). `updatedInput`으로 선택지를 바꿀 수 있는지는 [?] |
+| 선택 대화상자 | AskUserQuestion. **[실측, 2026-09-25]** PreToolUse matcher `AskUserQuestion`이 동작한다. `tool_input`은 `{questions: [{question, header, options: [{label, description}], multiSelect}]}`. `updatedInput`으로 바꾼 설명은 **도구 입력에는 반영되지만**(`toolUseResult.questions`), **데스크톱 앱 대화상자 화면에는 보이지 않았다** (사용자 확인). CLI 화면은 눈으로 확인하지 않았다. 모델이 받는 도구 결과에는 선택한 label만 있다. 헤드리스(`claude -p`)에는 이 도구가 없다 |
 | 사용자에게 보이는 출력 | `systemMessage`. **[실측, 대화형 CLI]** PreToolUse와 Stop 모두 transcript에 `hook_system_message`로 기록되고 화면에 표시된다. 데스크톱 앱(Code 탭) 표시는 아직 따로 확인하지 않았다. 헤드리스 stream에는 나오지 않는다 | **[O]** `systemMessage`는 UI에 경고로 표시된다 |
 | 모델에게 전달 | `additionalContext` (PreToolUse/PostToolUse 등) **[O]** | **[O]** `additionalContext`. Stop에서 `decision:"block"`은 턴을 다시 시작시키므로 이 용도에 쓰지 않는다 |
 | 에이전트가 직접 호출 (MCP 도구) | 가능 **[O]** | 가능 **[O]**. 단 모델이 부르기로 해야 하므로 보장되지 않는다 |
@@ -53,7 +53,7 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 | 확인 항목 | 결과 |
 | --- | --- |
 | PreToolUse(AskUserQuestion) 실행 | ✅ 43ms. 같은 matcher의 다른 플러그인 hook과 함께 실행됨 |
-| 선택지 설명 수정 | ✅ 대화상자가 수정된 입력(`[jev·가짜 부합 0.24 · 범위 0.66 · 되돌림 0.43] camelCase with owner`)으로 실행됨. 사용자가 고른 뒤 모델은 label만 받음 |
+| 선택지 설명 수정 | 🟡 도구 입력에는 반영됨 (`toolUseResult`에 `[jev·가짜 부합 0.24 · 범위 0.66 · 되돌림 0.43] camelCase with owner`). **화면 표시는 확인하지 않았다** (터미널 캡처에 TUI가 남지 않음). 사용자가 고른 뒤 모델은 label만 받음 |
 | `systemMessage` | ✅ PreToolUse와 Stop 모두 `hook_system_message`로 표시 |
 | Stop(텍스트 선택지) | ✅ 55ms. 모델이 전역 규약대로 번호 목록 + 바로 다음 줄 질문(`Which name should we use? (Recommended: 1)`)을 써서 선택지 3개를 잡음. 추천은 질문 줄에만 있었다 |
 | 외부 전송 | 없음 (가짜 점수) |
@@ -66,10 +66,10 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 
 | 확인 항목 | 결과 |
 | --- | --- |
-| PreToolUse(AskUserQuestion) | ✅ 실행 (481ms, 첫 실행). 대화상자가 수정된 설명으로 실행됨 (`toolUseResult`) |
+| PreToolUse(AskUserQuestion) | ✅ 실행 (481ms, 첫 실행). 도구 입력은 수정된 설명으로 바뀜 (`toolUseResult`) |
 | PreToolUse `systemMessage` | ✅ 기록됨. 화면에서는 **"Claude Code 알림"**(알림)으로 표시되는 것으로 보인다 (사용자 붙여넣기 기준) |
 | Stop `systemMessage` | ✅ 대화 흐름에 표시. 단 **줄마다 `Stop says:` 접두어**가 붙어 여러 줄 표가 흐트러짐 → 표시를 **한 줄 형식**으로 바꿨다 (kit 0.1.16) |
-| 선택지 설명 앞 점수의 화면 표시 | 도구는 수정된 입력으로 실행됐다. 대화상자 화면에 보였는지는 사용자 확인이 필요하다 |
+| 선택지 설명 앞 점수의 화면 표시 | ❌ **대화상자에 보이지 않았다** (사용자 확인). 데스크톱 대화상자는 hook이 바꾼 입력이 아니라 원래 입력으로 그려지는 것으로 보인다. 대화상자 경로에서 점수를 보는 곳은 `systemMessage` 알림뿐이다 |
 
  (실측, 이 세션의 응답 38개)
 
@@ -82,7 +82,7 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 
 ## 6. 다음 단계
 
-1. ~~대화형 확인~~ → §4.1에서 완료 (CLI). 데스크톱 앱 표시는 남음.
+1. ~~대화형 확인~~ → §4.1(CLI), §4.2(데스크톱)에서 완료. 결론: 텍스트 선택지 경로(Stop)가 주 경로다. 대화상자 경로는 점수를 알림으로만 보여 줄 수 있다 (설명 수정은 화면에 반영되지 않음).
 2. **실제 Jev 모드**: 키가 생기면 `score()`에 실제 호출을 붙인다. 가짜 모드와 같은 요청 모양이다. 시간 상한, 외부 전송 opt-in, 요청 로그 마스킹.
 3. **평가**: 선택지가 있는 실제 응답을 모아 [templates/evalset.md](../templates/evalset.md) 형식으로 라벨링한다 (범위 안, 되돌림 가능, 요청 부합). 한국어 슬라이스와 adversarial 포함.
 4. **Codex `request_user_input`**: Plan 모드에서 `tool_input` 모양을 실측한 뒤 지원한다.
