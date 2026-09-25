@@ -200,7 +200,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 8 ✅ | 파일럿 실제 프로젝트 1~2개 | 케이스 문서와 브랜치가 생기고 사용자 리뷰를 받음 → **2026-09-25 부분 완료**: `dynamic-agents`(채택 1, 승인 대기)와 `team-log`(채택 0)의 클론에서 후보 보고까지 실행. detect 사각지대를 발견해서 0.2.0으로 보완. → **사용자 승인 후 `dynamic-agents` 원본에 적용 완료**: 브랜치 `jev/apply-20260925`, 430개 테스트와 check 통과 ([RESULTS](e2e/RESULTS.md#실제-적용-dynamic-agents-원본-8단계-2026-09-25--kit-017)) |
 | 9 ✅ | Q6 replay | 결정 수준 gold로 정책 채점 → **2026-09-25 확인**: `kit/eval/replay.py` (API 미호출, 프로젝트 정책을 어댑터 명령으로 호출), 테스트 7개. dynamic-agents 합성셋 38건에 이상적인 답을 넣어 실제 TS 정책(`affectsFrom`)으로 replay: 라벨과 정책 구조 불일치 0건 (측정 아님) |
 | 10 ✅ | Q6 평가셋 템플릿과 builder | 케이스 정의 파일 + 프로젝트 state 어댑터 → split별 samples → **2026-09-25 확인**: `kit/eval/build.py`, 테스트 7개, 일반 예시(triage). dynamic-agents의 기존 합성셋 24케이스를 새 형식으로 옮겨 다시 빌드한 결과가 기존 samples와 **바이트 단위로 같음**. dry-run과 replay 배선 확인 결과도 같음. 새 경고로 "한국어가 모두 번역 쌍"임을 발견 |
-| 11 ✅ | Q7 주간 점검 스크립트 | 기준선 대비 변화만 리포트, 문서 미수정 → **2026-09-25 확인**: 추적 페이지 35, 목차 111, 모델 ID 4, SDK 2개로 기준선 생성. 곧바로 다시 실행하면 변화 없음(exit 0). 테스트 5개(오프라인) |
+| 11 ✅ | Q7 주간 점검 스크립트 | 기준선 대비 변화만 리포트, 문서 미수정 → **2026-09-25 확인**: 추적 페이지 35, 목차 111, 모델 ID 4, SDK 2개로 기준선 생성. 곧바로 다시 실행하면 변화 없음(exit 0). 테스트 5개(오프라인). GitHub Actions 수동 실행 2회 성공: runner에서도 35페이지 모두 가져옴, 로컬과 같은 해시(변화 없음), 이슈 미생성 |
 
 ## 10. 확장 지점 (MVP 밖)
 
@@ -209,7 +209,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | Q3 hook 트리거 | **보류 (2026-09-25 결정: 명시적 명령만).** 다시 검토할 때: 플러그인 hooks로 "새 LLM 호출 코드가 추가되면 `/jev:apply` 실행을 제안" (detect의 llm_call_sites 재사용). 먼저 detect의 사각지대(자체 provider 계층)를 줄여야 한다 |
 | Q4 에이전트 확장 | **결정: Claude Code(플러그인) + Codex(AGENTS.md) 공식 지원**, 그 밖은 AGENTS.md best-effort. 원격 MCP 서버는 만들지 않는다 |
 | Q6 평가 자동화 | **결정: 합성셋 + replay. 완료 (kit 0.1.12)**: `templates/evalset.md`(템플릿), `kit/eval/build.py`(builder), `kit/eval/replay.py`, 예시 `kit/eval/examples/triage`. replay 정의(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
-| Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트. 스크립트 완료 (kit 0.1.13)**: `kit/freshness/check_docs.py`, 기준선 `baseline.json`(2026-09-25). 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
+| Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트. 완료 (kit 0.1.13)**: `kit/freshness/check_docs.py`, 기준선 `baseline.json`(2026-09-25), GitHub Actions `jev-freshness`(매주 월 09:00 KST, 변화 시 이슈. Cloudflare 등 별도 인프라 불필요). 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
 | 서버 (Cloudflare) | 키 프록시, 예산, 케이스 대시보드. 로컬 킷의 절차는 그대로 두고 층을 추가한다 |
 
 ## 11. 결정 사항 (2026-09-25 확정: 제안대로)
