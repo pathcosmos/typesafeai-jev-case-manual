@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 a5d072f (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 9e8fb2b (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -173,7 +173,8 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | 라벨 두 층 | ① noul 3개의 기대값(`label`, measure.py가 채점) ② gate 자체의 gold `affects` (yes 16 / no 17 / unsure 5, unsure = 요약만으로는 알 수 없어 에스컬레이션이 맞는 경우). gold는 `affectsFrom`으로 유도하지 않고 따로 판단했다 (정책을 자기 자신과 비교하지 않기 위해) |
 | 검증 | `measure.py --dry-run` 두 파일 모두 `dry_run`, exit 0 (예상 입력 약 6.2k / 5.8k 토큰, ≈ $0.0003 이하) · 일부러 깨뜨린 spec은 exit 3 · 키 없이 실제 실행하면 exit 2 (skipped) |
 | 한계 | **프로젝트 담당자가 라벨을 검수하지 않았다.** 38건은 임계값을 [측정]으로 바꾸기에 부족하다 (목표 수백 건). 합성 문장이라 실제 에이전트 요약의 분포와 다르다 |
-| 다음 | 키가 생기면 split별로 실제 실행 (각 50건 예산 안) → `per_sample` noul에 `affectsFrom`을 적용해 gold와 비교하는 replay 단계가 필요하다 (measure.py는 noul별 정확도만 계산한다. 아직 만들지 않았다) |
+| 배선 확인 (측정 아님) | KIT `kit/eval/replay.py` + 어댑터 `.jev/eval/policy.mjs`(실제 `affectsFrom` 호출). noul 라벨로 만든 이상적인 답(0.9/0.1)을 replay: tune 20 / test 18건 모두 gold와 불일치 0, 모호한 5건 모두 unsure, en/ko 쌍 불일치 0. **라벨과 정책 구조가 맞는다는 뜻일 뿐 성능 결과가 아니다** |
+| 다음 | 키가 생기면 split별로 실제 측정 (각 50건 예산 안) → 같은 명령으로 replay: `python3 KIT/kit/eval/replay.py --measure .jev/eval/measure.test.json --samples .jev/eval/samples.test.jsonl --policy-cmd "node .jev/eval/policy.mjs" --gold-field gold_affects --decisions yes,no,unsure --costly yes:no`. 임계값 조정은 tune으로만 한다 |
 
 ### 4.2 지표와 채택 기준
 

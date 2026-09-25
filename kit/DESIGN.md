@@ -198,6 +198,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 6 ✅ | `kit/measure/measure.py` | 키가 없으면 건너뛰고, 키가 있으면 예산 안에서 보고서를 만듦 → **2026-09-25 확인**: mock API로 11개 시나리오 통과 (키 없음, 잘못된 spec, 요청과 토큰 예산, 429 재시도, HTML 403, 인증과 형식 오류 중단, 키와 원문 비노출, dry-run). kit 0.1.9에서 라벨 검사 2개 추가 (모르는 키, 타입 불일치, 중복 id → 경고 후 채점 제외) → 13개. 실제 API에 가짜 키로 401 → auth 분류 확인. **실제 키로 한 측정은 아직 하지 않음** |
 | 7 ✅ | AGENTS.md 개편과 Codex 경로 확인 | 같은 fixture에서 같은 형식의 산출물이 나옴 → **2026-09-25 확인**: Codex CLI로 `py-openai-json`을 실행해서 같은 판단, 테스트 44개 통과, check 0/0, 케이스 문서 섹션 일치. 발견(`.git` 읽기 전용 샌드박스)을 kit 0.1.6에 반영 ([RESULTS](e2e/RESULTS.md#codex-실행-에이전트-중립성-검증-2026-09-25--kit-015)) |
 | 8 ✅ | 파일럿 실제 프로젝트 1~2개 | 케이스 문서와 브랜치가 생기고 사용자 리뷰를 받음 → **2026-09-25 부분 완료**: `dynamic-agents`(채택 1, 승인 대기)와 `team-log`(채택 0)의 클론에서 후보 보고까지 실행. detect 사각지대를 발견해서 0.2.0으로 보완. → **사용자 승인 후 `dynamic-agents` 원본에 적용 완료**: 브랜치 `jev/apply-20260925`, 430개 테스트와 check 통과 ([RESULTS](e2e/RESULTS.md#실제-적용-dynamic-agents-원본-8단계-2026-09-25--kit-017)) |
+| 9 ✅ | Q6 replay | 결정 수준 gold로 정책 채점 → **2026-09-25 확인**: `kit/eval/replay.py` (API 미호출, 프로젝트 정책을 어댑터 명령으로 호출), 테스트 7개. dynamic-agents 합성셋 38건에 이상적인 답을 넣어 실제 TS 정책(`affectsFrom`)으로 replay: 라벨과 정책 구조 불일치 0건 (측정 아님) |
 
 ## 10. 확장 지점 (MVP 밖)
 
@@ -205,7 +206,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | --- | --- |
 | Q3 hook 트리거 | **보류 (2026-09-25 결정: 명시적 명령만).** 다시 검토할 때: 플러그인 hooks로 "새 LLM 호출 코드가 추가되면 `/jev:apply` 실행을 제안" (detect의 llm_call_sites 재사용). 먼저 detect의 사각지대(자체 provider 계층)를 줄여야 한다 |
 | Q4 에이전트 확장 | **결정: Claude Code(플러그인) + Codex(AGENTS.md) 공식 지원**, 그 밖은 AGENTS.md best-effort. 원격 MCP 서버는 만들지 않는다 |
-| Q6 평가 자동화 | **결정: 합성셋 + replay (예정).** `kit/eval/`에 평가셋 템플릿, 합성셋 builder 골격, replay(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
+| Q6 평가 자동화 | **결정: 합성셋 + replay.** replay는 **완료 (kit 0.1.11)**: `kit/eval/replay.py`, 테스트 7개, dynamic-agents 배선 확인. 남은 것: `kit/eval/`에 평가셋 템플릿, 합성셋 builder 골격. replay 정의(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
 | Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트 (예정).** 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
 | 서버 (Cloudflare) | 키 프록시, 예산, 케이스 대시보드. 로컬 킷의 절차는 그대로 두고 층을 추가한다 |
 
