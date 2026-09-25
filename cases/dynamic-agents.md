@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 8f00cc2 (코드: ae2d41f, fd7666f, 1f08be2, 8f00cc2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 d6a2b68 (코드: ae2d41f, fd7666f, 1f08be2, 8f00cc2, d6a2b68) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -192,6 +192,8 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 - 정책 단위 테스트 (녹화 응답, API 미호출): `test/jev-gate.test.ts` — 3-way 경계, state 구성과 자르기, 요청 1건·모델 고정, 에러 분류, env 모드 해석, off일 때 `jev` 키 없음, shadow에서도 LLM 결정 유지, needs_human 경로 기록, 산출물 본문 미포함.
 - 추가할 것: 한/영 패러프레이즈 불변(INV), "표현만 바꿈" 문구 추가 시 meaning_preserving 상승(DIR).
 
+**엔진 전체 흐름 실측 (2026-09-25)**: 스텁 LLM + 실제 Jev shadow로 start → tick → informs gate를 돌렸다 (합성 요약 3건: 영어 영향 있음, 영어 오타, 한국어 영향 있음). LLM 결정이 그대로 적용되고 `gate.evaluated.jev`에 `ok`로 기록됐으며, Jev 결정은 세 건 모두 기대와 같았다 (yes/no/yes, 205~501ms, 요청당 약 590토큰). 기록에 원문 텍스트는 없었다. 같은 원장에 리포트 CLI를 돌려 집계를 확인했다. **실제 운영 데이터는 아직 없다** (로컬 원장의 gate 기록 0건).
+
 ### 4.4 튜닝 기록 (2026-09-25)
 
 라벨 검수 후 `touches_target`을 조정했다. **튜닝은 tune split(26건)에서만** 하고, test split(24건)은 마지막에 한 번만 확인했다.
@@ -214,7 +216,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | 처리량 | gate 후보는 순차 처리 (동시성 1). 한도(1,200 req/min)와 거리가 멀다 |
 | 버전 고정 | `jev-1.13.0`, 요청마다 model 지정 · 업그레이드: shadow eval → 재튜닝 → 부분 적용 |
 | 로깅 | `gate.evaluated.jev`: status, noul 3개, affects, model, latency_ms, input_tokens 또는 에러 category/http_status. state 원문 없음. **`request_id`는 아직 기록하지 않는다** (manual/05 권장, 후속 과제) |
-| 모니터링 | 원장 쿼리로 LLM `affects`와 `jev.affects` 불일치율, jev 에러 category 분포, noul 분포를 본다 (대시보드 없음) |
+| 모니터링 | `node scripts/jev-shadow-report.ts [--db <path>] [--project <id>] [--json]` (원장을 읽기 전용으로 연다). 집계: LLM × Jev 일치표, **LLM이 unsure로 넘기고 사람이 답한 gate에서 Jev가 사람과 같았는지**(이것이 실데이터 정답), Jev 상태·에러 분류, 지연 p50/p95, 토큰·추정 비용. 원문(reason, 요약)은 출력하지 않는다. 집계 로직은 `src/engine/jev/report.ts`(단위 테스트 있음). 대시보드는 없다 |
 | 정기 표본 라벨링 | 미정 |
 
 ## 6. 리스크와 미해결 질문
