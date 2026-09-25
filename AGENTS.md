@@ -1,7 +1,7 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
 > 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> kit 0.1.18 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
+> kit 0.1.19 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
@@ -94,6 +94,7 @@ KIT=/Users/lanco/taketimes/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 
 - 검증 실패가 **400**으로도 온다(문서는 422). 키가 없으면 **403**, 틀리면 401이다.
 - state에 `curl https://...` 같은 문자열이 있으면 **Cloudflare가 HTML 403**을 반환한다.
 - Score 레벨이 11개 이상이면 400, 레벨에 null을 넣으면 422다. 확률은 **소수 둘째 자리로 양자화**되어 있다 (정렬하면 동률이 생긴다).
+- 같은 요청을 반복하면 확률이 최대 0.07 정도 흔들린다 (실측). 임계값 근처 표본은 결정이 뒤집히므로 **여유 구간**을 둔다.
 - 여러 항목을 한 state에 몰아넣고 순위를 매기게 하면 품질이 떨어진다. **항목마다 질문**을 둔다.
 - 서비스가 런칭 직후라 장애 이력이 있다. 재시도와 fallback이 필수다.
 

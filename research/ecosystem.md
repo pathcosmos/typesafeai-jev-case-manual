@@ -26,6 +26,7 @@
 | G11 | **다중 라벨 전용 primitive가 없다.** 라벨별 Noul은 너무 많이 켜지는(blowout) 경향이 있다 | 우회: Choice 확률에 상대 임계값을 건다 (예: `p ≥ 0.10 AND p ≥ 0.25·max`). 도메인에서 검증해야 한다 | [C] [typesafe-sdk-js#11](https://github.com/typesafe-ai/typesafe-sdk-js/issues/11) |
 | G12 | 서비스가 런칭 직후라 안정성이 흔들린다. 9월 중 API 다운(18분), 간헐 장애, 지연 증가, 콘솔 로그인 500(키 발급 불가)이 있었다. 공식 status에 표시된 uptime은 99.829%다 | **재시도 + fallback 경로(추론 LLM 또는 규칙)**를 설계 필수 항목으로 둔다 | [O] [status.typesafe.ai](https://status.typesafe.ai), [C] [skills#10](https://github.com/typesafe-ai/skills/issues/10) |
 | G13 | 지역별 지연: 미국 서부 밖에서 측정한 값은 0.59–3.11s(이스라엘), 중앙값 239ms(프랑스), 약 220ms(한국 벤치)였다. 공식 주장은 70–500ms다 | **한국에서 직접 측정해서** SLO를 정한다 | [C] skills#12, beri.net, jev-korean-benchmark |
+| G14 | **같은 요청을 반복하면 확률이 조금씩 달라진다.** [실측, 2026-09-25, `jev-1.13.0`] 같은 요청 38건을 두 번 보냈더니 Noul 114개 중 54개가 바뀌었고 최대 차이 0.07. 임계값 근처 표본은 결정이 뒤집힌다 (0.24 vs 임계값 0.2) | 임계값 ± 0.07 안쪽은 review band로 둔다. 평가는 두 번 이상 돌려 흔들리는 표본을 확인한다 ([manual/04 §3](../manual/04-evaluation.md#3-임계값-정하기-요약)) | 이 저장소 실측 ([cases/dynamic-agents](../cases/dynamic-agents.md) §4) |
 
 ## 2. 공식 자료 (docs 외)
 

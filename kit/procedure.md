@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.18 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.19 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 

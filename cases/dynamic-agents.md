@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 ef926d0 (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 60c49e4 (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -151,7 +151,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 
 ## 4. 평가 계획과 결과 (manual/04)
 
-**첫 실측 (2026-09-25)**: 사용자가 키를 준 뒤 합성셋 38건(tune 20, test 18)을 `jev-1.13.0`으로 측정하고 실제 `affectsFrom`으로 replay했다. 요청 38건, 입력 19,113토큰, 약 $0.0008. 오류 0건. **표본이 작고 합성이며 라벨 미검수라 모든 수치와 임계값은 [잠정]이다.** 프로젝트 코드 경로(`decideGate`, 환경변수 shadow hook)도 실제 API로 확인했다 (영어 yes, 한국어 no, 요약 없음 skip, 틀린 키 401 → `auth` 기록).
+**실측 (2026-09-25, 2회)**: 1차는 합성셋 38건, 2차는 원문 한국어 12건을 더한 50건(tune 26, test 24)이다. `jev-1.13.0`, 오류 0건. 2차는 요청 50건, 입력 25,248토큰, 약 $0.0011이었다. 실제 `affectsFrom`으로 replay했다. **표본이 작고 합성이며 라벨 미검수라 모든 수치와 임계값은 [잠정]이다.** 프로젝트 코드 경로(`decideGate`, 환경변수 shadow hook)도 실제 API로 확인했다 (영어 yes, 한국어 no, 요약 없음은 skip, 틀린 키는 401 → `auth`로 기록). **반복 실행 편차**: 같은 38건을 두 번 보냈을 때 Noul 114개 중 54개가 바뀌었고 최대 차이는 0.07이었다. 임계값 근처(u02-en: touches 0.24, 임계값 0.2)는 no ↔ unsure로 뒤집혔다.
 
 ### 4.1 평가셋
 
@@ -169,10 +169,10 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | --- | --- |
 | 위치 | `.jev/eval/`: `cases.json`(케이스 정의, KIT `templates/evalset.md` 형식), `state.mjs`(state 어댑터, `jevGateState` 호출), `policy.mjs`(replay 어댑터), `questions.json`(`GATE_QUESTIONS`에서 생성해 문구가 코드와 같음), `samples.tune.jsonl` 20건, `samples.test.jsonl` 18건. 재생성: `python3 KIT/kit/eval/build.py --cases .jev/eval/cases.json --questions .jev/eval/questions.json --state-cmd "node .jev/eval/state.mjs" --gold-field gold_affects --require-lang ko` |
 | state | 운영 코드 `jevGateState()`로 만든다 (필드 이름, 자르기, 상한이 운영과 같다) |
-| 구성 (38건) | 명확한 yes 6, 표현만 바꿈 4, 무관한 변경 4, 모호한 요약 3, adversarial 3, 경계 4 (케이스 기준 24개). 이 중 14개는 **en/ko 쌍** (`-en`/`-ko`, 같은 gold, 같은 split) → 한국어 슬라이스 14건이자 패러프레이즈 불변(INV) 검사 |
+| 구성 (50건) | 케이스 36개 = 영어 기반 24개(명확한 yes 6, 표현만 바꿈 4, 무관한 변경 4, 모호한 요약 3, adversarial 3, 경계 4, 이 중 14개는 en/ko **번역 쌍**) + **원문 한국어 12개**(k01~k12: clear 6, 모호 2, adversarial 2, 경계 2. 에이전트가 처음부터 한국어로 쓴 초안). tune 26 / test 24 |
 | 라벨 두 층 | ① noul 3개의 기대값(`label`, measure.py가 채점) ② gate 자체의 gold `affects` (yes 16 / no 17 / unsure 5, unsure = 요약만으로는 알 수 없어 에스컬레이션이 맞는 경우). gold는 `affectsFrom`으로 유도하지 않고 따로 판단했다 (정책을 자기 자신과 비교하지 않기 위해) |
 | 검증 | `measure.py --dry-run` 두 파일 모두 `dry_run`, exit 0 (예상 입력 약 6.2k / 5.8k 토큰, ≈ $0.0003 이하) · 일부러 깨뜨린 spec은 exit 3 · 키 없이 실제 실행하면 exit 2 (skipped) |
-| 한계 | **한국어 14건은 모두 영어 케이스의 번역 쌍이다.** 패러프레이즈 불변 검사는 되지만 한국어 슬라이스 정확도의 근거는 아니다 (manual/04: 원문 한국어). KIT build가 이를 경고한다 → 원문 한국어 케이스를 추가해야 한다. **프로젝트 담당자가 라벨을 검수하지 않았다.** 38건은 임계값을 [측정]으로 바꾸기에 부족하다 (목표 수백 건). 합성 문장이라 실제 에이전트 요약의 분포와 다르다 |
+| 한계 | 원문 한국어 12건은 **에이전트가 쓴 초안**이라 실제 에이전트 요약의 분포와 다를 수 있다. **프로젝트 담당자가 라벨을 검수하지 않았다** (검수표: `.jev/eval/review.md`). 50건으로는 임계값을 [측정]으로 바꿀 수 없다 (목표 수백 건) |
 | 배선 확인 (측정 아님) | KIT `kit/eval/replay.py` + 어댑터 `.jev/eval/policy.mjs`(실제 `affectsFrom` 호출). noul 라벨로 만든 이상적인 답(0.9/0.1)을 replay: tune 20 / test 18건 모두 gold와 불일치 0, 모호한 5건 모두 unsure, en/ko 쌍 불일치 0. **라벨과 정책 구조가 맞는다는 뜻일 뿐 성능 결과가 아니다** |
 | 다음 | 원문 한국어 케이스 추가, 라벨 검수, 표본 확대 뒤 다시 측정 → replay (같은 명령). 임계값 조정은 tune으로만 한다 |
 
@@ -180,9 +180,9 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 
 | 지표 | 목표 | 결과 | 상태 |
 | --- | --- | --- | --- |
-| 자동 결정(yes/no) 중 오류율 (95% 상한), 특히 잘못된 no | 미정 (α) | tune 0/15 (상한 20%), test 0/13 (상한 23%). 잘못된 no 0건 | [잠정] |
-| Coverage (unsure가 아닌 비율) | 현행 LLM gate의 unsure 비율 이상 | tune 0.75, test 0.72. gold가 unsure인 5건은 모두 올바르게 보류. 결정할 수 있었는데 보류한 것 5건(u01 쌍, u02-ko, b02, b04): 대부분 `touches_target`이 0.26~0.71로 애매한 경우 | [잠정] |
-| 한국어 슬라이스 오류율 | ≤ α | 오류 0 (tune 8건, test 6건, 모두 번역 쌍). en/ko 쌍 불일치 1건(u02: 영어는 no, 한국어는 unsure). **원문 한국어 케이스는 아직 없다** | [잠정] |
+| 자동 결정(yes/no) 중 오류율 (95% 상한), 특히 잘못된 no | 미정 (α) | 2차: tune 0/19 (상한 17%), test 0/17 (상한 18%). 잘못된 no 0건. adversarial 7건 모두 정답 | [잠정] |
+| Coverage (unsure가 아닌 비율) | 현행 LLM gate의 unsure 비율 이상 | 2차: tune 0.73, test 0.71. gold가 unsure인 7건은 모두 올바르게 보류. 결정할 수 있었는데 보류한 것은 주로 **무관한 변경**(u01, u02, b02, k03)으로, `touches_target`이 0.24~0.68 사이에 걸렸다. 조정 후보는 이 질문의 문구와 `touchesNo` | [잠정] |
+| 한국어 슬라이스 오류율 | ≤ α | 2차: 오류 0. **원문 한국어 12건 중 11건 정답 결정, 1건(k03) 보류.** 번역 쌍 불일치 0 (1차에서는 u02 1건) | [잠정] |
 | 결정 1건당 비용 (현행 LLM 대비) | 더 낮음 | 요청당 약 500 입력 토큰 ≈ $0.00002. 현행 LLM 비용과의 비교는 아직 안 함 | [측정] (비용만) |
 | p50 / p95 지연 (한국에서 직접 측정) | 현행 LLM보다 낮음 | p50 약 490ms, p95 약 550~590ms (이 머신, measure.py 기준). 현행 LLM과의 비교는 아직 안 함 | [측정] (지연만) |
 | fallback 동작 확인 | 예 | 녹화 응답 테스트로 확인 (401/403/HTML 403/422/429/503, 예외) | 테스트 통과 |
