@@ -71,7 +71,18 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 | Stop `systemMessage` | ✅ 대화 흐름에 표시. 단 **줄마다 `Stop says:` 접두어**가 붙어 여러 줄 표가 흐트러짐 → 표시를 **한 줄 형식**으로 바꿨다 (kit 0.1.16) |
 | 선택지 설명 앞 점수의 화면 표시 | ❌ **대화상자에 보이지 않았다** (사용자 확인). 데스크톱 대화상자는 hook이 바꾼 입력이 아니라 원래 입력으로 그려지는 것으로 보인다. 대화상자 경로에서 점수를 보는 곳은 `systemMessage` 알림뿐이다 |
 
- (실측, 이 세션의 응답 38개)
+## 4.3 Codex 실측 (2026-09-26, Codex CLI 0.154, 실제 Jev)
+
+설치기(`install.sh`)가 `~/.codex/hooks.json`에 넣은 `Stop`·`SessionStart` hook을 사용자가 `/hooks`에서 신뢰한 뒤 `codex exec`로 확인했다.
+
+| 확인 항목 | 결과 |
+| --- | --- |
+| `SessionStart` 규약 전달 | ✅ 세션 기록(rollout)에 규약이 들어갔고, 에이전트가 번호 목록 + 바로 다음 줄 질문(`…할까요? (추천: 1)`)으로 답했다 |
+| `Stop` 선택지 인식 | ✅ `last_assistant_message`에서 선택지 2개를 잡아 요청을 만들었다 (`JEV_OPTIONS_LOG`) |
+| 화면 표시 (`systemMessage`) | 미확인. `exec --json` 스트림과 rollout에 남지 않는다. 문서상 대화형 UI에 경고로 표시된다 |
+| Claude 플러그인 hook 읽기 | Codex가 Claude 플러그인의 hook을 읽고 신뢰 대상으로 올린다. `jev@jev-kit` 플러그인 hook까지 신뢰하면 설치기 항목과 중복된다 |
+
+## 5. 선택지 찾기의 정밀도 (실측, 이 세션의 응답 38개)
 
 | 규칙 | 잡은 것 | 오탐 |
 | --- | --- | --- |
