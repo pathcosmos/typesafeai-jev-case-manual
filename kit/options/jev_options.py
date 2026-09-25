@@ -33,6 +33,7 @@ VERSION = "0.1.0"
 MODEL = "jev-1.13.0"
 MAX_OPTIONS = 9
 MAX_TEXT = 2000  # state 필드별 문자 상한
+WARN_BELOW = 0.3  # 범위 안·되돌리기 쉬움이 이보다 낮으면 종합과 별도로 경고
 MAX_CUE_LINE = 160  # 목록 뒤 질문 줄의 최대 길이 (긴 마무리 문단은 선택 질문으로 보지 않는다)
 NUM_ITEM = re.compile(r"^\s{0,3}(?:(\d{1,2})[.)]|([①-⑨]))\s+(.+?)\s*$")
 FENCE = re.compile(r"^\s*(```|~~~)")
@@ -215,15 +216,34 @@ def _short(label: str, width: int = 24) -> str:
     return head if len(head) <= width else head[:width - 1] + "…"
 
 
+def composite(n: int, answers: dict) -> list[tuple[float, list[str]]]:
+    """선택지마다 (종합, 경고). 종합 = (부합 ÷ 가장 높은 부합) × 범위 안 × 되돌리기 쉬움.
+    부합은 선택지끼리 나눠 갖는 몫이라 선택지 수에 따라 작아지므로 가장 높은 부합에 대한 비율로 바꾼다.
+    곱만 보면 약점 하나가 묻히므로 범위 안·되돌리기 쉬움이 WARN_BELOW 미만이면 따로 경고한다."""
+    probs = answers["best_match"]["probabilities"]
+    fits = [probs.get(str(i + 1), 0) for i in range(n)]
+    top = max(fits) if fits else 0
+    out = []
+    for i, fit in enumerate(fits):
+        scope, rev = answers[f"in_scope_{i + 1}"]["noul"], answers[f"reversible_{i + 1}"]["noul"]
+        warn = (["범위 밖"] if scope < WARN_BELOW else []) + (["되돌리기 어려움"] if rev < WARN_BELOW else [])
+        out.append(((fit / top if top > 0 else 0.0) * scope * rev, warn))
+    return out
+
+
 def render(options: list[str], resp: dict, mode: str) -> str:
     """한 줄로 만든다. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2)."""
     a = resp["answers"]
     probs = a["best_match"]["probabilities"]
     tag = "[가짜 점수] " if mode == "fake" else ""
+    scores = composite(len(options), a)
     parts = [f"{i + 1} {_short(o)} {probs.get(str(i + 1), 0):.2f}/{a[f'in_scope_{i + 1}']['noul']:.2f}/{a[f'reversible_{i + 1}']['noul']:.2f}"
-             for i, o in enumerate(options)]
+             f" 종합 {s:.2f}" + "".join(f" ⚠{w}" for w in warn)
+             for i, (o, (s, warn)) in enumerate(zip(options, scores))]
+    best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1 if scores else 0
     tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
-    return f"{tag}Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움, 판정이 아님): " + " · ".join(parts) + tail
+    return (f"{tag}Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움 → 종합, 판정이 아님): " + " · ".join(parts)
+            + f" · 종합 최고 {best}" + tail)
 
 
 def annotate_ask(tool_input: dict, per_question: list[dict]) -> dict:

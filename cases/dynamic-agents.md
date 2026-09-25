@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 60c49e4 (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 8f00cc2 (코드: ae2d41f, fd7666f, 1f08be2, 8f00cc2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -84,7 +84,7 @@ detect.py 0.2.0은 provider 계층에서 전송 지점 15개(`kind: http|cli`)�
 | ID | 쓰이는 코드 경로 | primitive | instructions | criteria | no-match | 추측성 | 임계값이 읽는 값 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `summary_is_specific` | unsure 게이트 | Noul | Does `change.summary` say concretely what changed in the source, rather than only saying that something was updated? | 없음 | — | 아니오 | noul |
-| `touches_target` | yes / no 결정 | Noul | Does the change described in `change.summary` alter content, data, an interface, or a decision that `target.goal` or the files in `target.artifacts` rely on? | 없음 | — | 아니오 | noul |
+| `touches_target` | yes / no 결정 | Noul | Does the change described in `change.summary` alter content, data, an interface, or a decision that `target.goal` or the files in `target.artifacts` rely on? | true: 대상이 쓰는 부분(명령, 버전, 필드, 규칙, 숫자, 섹션)이 바뀜 · false: 대상이 안 쓰는 부분, 결과가 같은 내부 변경(로그, 속도, 주석), 사실은 그대로인 문구 수정 (2026-09-25 추가, §4.4) | — | 아니오 | noul |
 | `meaning_preserving` | no 쪽 보조, yes 차단 | Noul | Is the change described in `change.summary` limited to wording, formatting, typos, or comments, so that the meaning of the source stays the same? | 없음 | — | 예 (touches가 애매할 때만 결정에 쓰임) | noul |
 
 - 세 질문 모두 높은 값이 yes다. criteria 없이 시작하고, 평가에서 criteria 있음/없음을 비교한다 ([reference/06](../reference/06-noul.md)).
@@ -101,7 +101,7 @@ detect.py 0.2.0은 provider 계층에서 전송 지점 15개(`kind: http|cli`)�
 | --- | --- | --- | --- | --- |
 | `specificMin` | summary_is_specific.noul | 0.5 | [잠정] | 모호한 요약은 결정하지 않는다 |
 | `touchesYes` | touches_target.noul | 0.8 | [잠정] | [공식 예시] 0.8/0.2 구간에서 출발 |
-| `touchesNo` | touches_target.noul | 0.2 | [잠정] | 잘못된 no가 더 비싸다 |
+| `touchesNo` | touches_target.noul | **0.4** (0.2에서 변경, 2026-09-25) | [잠정] | 잘못된 no가 더 비싸다. tune 26건 2회 실측에서 0.4가 오류 0으로 coverage 최대. yes 라벨 케이스는 모두 0.91 이상이고 반복 편차는 0.09 이하라 여유가 있다. 표본이 작아 [측정]은 아니다 |
 | `preservingYes` | meaning_preserving.noul | 0.8 | [잠정] | |
 | `preservingMax` | meaning_preserving.noul | 0.5 | [잠정] | yes에는 "표현만 바꿈"이 아니어야 한다 |
 | `touchesMid` | touches_target.noul | 0.5 | [잠정] | 표현만 바꾼 no에도 touches가 낮아야 한다 |
@@ -172,7 +172,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | 구성 (50건) | 케이스 36개 = 영어 기반 24개(명확한 yes 6, 표현만 바꿈 4, 무관한 변경 4, 모호한 요약 3, adversarial 3, 경계 4, 이 중 14개는 en/ko **번역 쌍**) + **원문 한국어 12개**(k01~k12: clear 6, 모호 2, adversarial 2, 경계 2. 에이전트가 처음부터 한국어로 쓴 초안). tune 26 / test 24 |
 | 라벨 두 층 | ① noul 3개의 기대값(`label`, measure.py가 채점) ② gate 자체의 gold `affects` (yes 16 / no 17 / unsure 5, unsure = 요약만으로는 알 수 없어 에스컬레이션이 맞는 경우). gold는 `affectsFrom`으로 유도하지 않고 따로 판단했다 (정책을 자기 자신과 비교하지 않기 위해) |
 | 검증 | `measure.py --dry-run` 두 파일 모두 `dry_run`, exit 0 (예상 입력 약 6.2k / 5.8k 토큰, ≈ $0.0003 이하) · 일부러 깨뜨린 spec은 exit 3 · 키 없이 실제 실행하면 exit 2 (skipped) |
-| 한계 | 원문 한국어 12건은 **에이전트가 쓴 초안**이라 실제 에이전트 요약의 분포와 다를 수 있다. **프로젝트 담당자가 라벨을 검수하지 않았다** (검수표: `.jev/eval/review.md`). 50건으로는 임계값을 [측정]으로 바꿀 수 없다 (목표 수백 건) |
+| 한계 | 원문 한국어 12건은 **에이전트가 쓴 초안**이라 실제 에이전트 요약의 분포와 다를 수 있다. 라벨은 **프로젝트 담당자가 검수했다** (2026-09-25, 전부 맞음). 50건으로는 임계값을 [측정]으로 바꿀 수 없다 (목표 수백 건) |
 | 배선 확인 (측정 아님) | KIT `kit/eval/replay.py` + 어댑터 `.jev/eval/policy.mjs`(실제 `affectsFrom` 호출). noul 라벨로 만든 이상적인 답(0.9/0.1)을 replay: tune 20 / test 18건 모두 gold와 불일치 0, 모호한 5건 모두 unsure, en/ko 쌍 불일치 0. **라벨과 정책 구조가 맞는다는 뜻일 뿐 성능 결과가 아니다** |
 | 다음 | 원문 한국어 케이스 추가, 라벨 검수, 표본 확대 뒤 다시 측정 → replay (같은 명령). 임계값 조정은 tune으로만 한다 |
 
@@ -181,7 +181,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | 지표 | 목표 | 결과 | 상태 |
 | --- | --- | --- | --- |
 | 자동 결정(yes/no) 중 오류율 (95% 상한), 특히 잘못된 no | 미정 (α) | 2차: tune 0/19 (상한 17%), test 0/17 (상한 18%). 잘못된 no 0건. adversarial 7건 모두 정답 | [잠정] |
-| Coverage (unsure가 아닌 비율) | 현행 LLM gate의 unsure 비율 이상 | 2차: tune 0.73, test 0.71. gold가 unsure인 7건은 모두 올바르게 보류. 결정할 수 있었는데 보류한 것은 주로 **무관한 변경**(u01, u02, b02, k03)으로, `touches_target`이 0.24~0.68 사이에 걸렸다. 조정 후보는 이 질문의 문구와 `touchesNo` | [잠정] |
+| Coverage (unsure가 아닌 비율) | 현행 LLM gate의 unsure 비율 이상 | **튜닝 후 test 0.83** (§4.4). 튜닝 전 2차: tune 0.73, test 0.71. gold가 unsure인 7건은 모두 올바르게 보류. 결정할 수 있었는데 보류한 것은 주로 **무관한 변경**(u01, u02, b02, k03)으로, `touches_target`이 0.24~0.68 사이에 걸렸다. 조정 후보는 이 질문의 문구와 `touchesNo` | [잠정] |
 | 한국어 슬라이스 오류율 | ≤ α | 2차: 오류 0. **원문 한국어 12건 중 11건 정답 결정, 1건(k03) 보류.** 번역 쌍 불일치 0 (1차에서는 u02 1건) | [잠정] |
 | 결정 1건당 비용 (현행 LLM 대비) | 더 낮음 | 요청당 약 500 입력 토큰 ≈ $0.00002. 현행 LLM 비용과의 비교는 아직 안 함 | [측정] (비용만) |
 | p50 / p95 지연 (한국에서 직접 측정) | 현행 LLM보다 낮음 | p50 약 490ms, p95 약 550~590ms (이 머신, measure.py 기준). 현행 LLM과의 비교는 아직 안 함 | [측정] (지연만) |
@@ -191,6 +191,20 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 
 - 정책 단위 테스트 (녹화 응답, API 미호출): `test/jev-gate.test.ts` — 3-way 경계, state 구성과 자르기, 요청 1건·모델 고정, 에러 분류, env 모드 해석, off일 때 `jev` 키 없음, shadow에서도 LLM 결정 유지, needs_human 경로 기록, 산출물 본문 미포함.
 - 추가할 것: 한/영 패러프레이즈 불변(INV), "표현만 바꿈" 문구 추가 시 meaning_preserving 상승(DIR).
+
+### 4.4 튜닝 기록 (2026-09-25)
+
+라벨 검수 후 `touches_target`을 조정했다. **튜닝은 tune split(26건)에서만** 하고, test split(24건)은 마지막에 한 번만 확인했다.
+
+| 단계 | 내용 | 결과 (tune) |
+| --- | --- | --- |
+| 문구 비교 | V0 현재 · V1 현재 + criteria · V2 "대상의 결과물이 바뀌어야 하나?" · V3 V2 + criteria | touches 정확도 V0 0.81 · **V1 0.85** · V2 0.77 · V3 0.81. V1이 정답 no 케이스의 값을 낮췄다 (k02 0.25→0.12, u01-en 0.45→0.30, k03 0.55→0.39) |
+| 임계값 sweep | V1 답에 실제 `affectsFrom`을 쓰고 `touchesNo`만 0.2/0.3/0.35/0.4/0.45로 바꿔 replay (추가 호출 없음). V1을 두 번 측정 | 0.4에서 coverage 0.73 → 0.81(1회차)·0.77(2회차), 두 번 모두 오류 0. 0.45도 같아서 더 보수적인 0.4를 골랐다 |
+| 적용 | `questions.ts`에 criteria, `policy.ts`의 `touchesNo` 0.4 | 테스트 431개 통과, typecheck, KIT check 0/0 |
+| **test 확인 (1회)** | 튜닝에 쓰지 않은 24건 | **coverage 0.71 → 0.83, 오류 0 (95% 상한 16%), 잘못된 no 0, 한국어 coverage 0.75 → 0.83.** 남은 보류는 b04 1건 (gold yes, touches가 touchesYes 0.8 아래) |
+| 비용 | criteria 텍스트만큼 입력이 는다 | 요청당 약 500 → 616 토큰 (≈ $0.000026) |
+
+모든 값은 여전히 **[잠정]**이다. 다음에 표본을 늘리면 tune과 test를 다시 나눠 같은 절차를 반복한다.
 
 ## 5. 운영 (manual/05)
 
@@ -214,7 +228,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | R5 | `@typesafe-ai/sdk`가 런타임 dependency가 되어 배포되는 `dyagent` 패키지도 의존하게 된다 | 설치 크기, 공급망 | 버전 고정 0.6.0. 필요하면 optional 로딩 검토 |
 | R6 | rate_limit 경로에서는 shadow 결과가 기록되지 않는다 | 표본 편향(작음) | 다음 틱에 다시 기록된다. 필요하면 별도 이벤트 검토 |
 | R7 | 테스트 하네스는 `ctx.jevGate`를 정하지 않아 모드를 `process.env`에서 읽는다. 셸에 `DYAGENT_JEV_GATE=shadow`와 `TYPESAFE_API_KEY`를 둘 다 export한 채 `pnpm test`를 돌리면 기존 gate·시나리오 테스트가 실제 API를 부르고 원장에 `jev` 키가 생긴다 | 과금, deep-equality·결정성 테스트 실패 가능 | **해결 (2026-09-25):** `test/helpers/harness.ts`가 `engine.ctx.jevGate = null`을 기본값으로 둔다. shadow가 필요한 테스트는 `ctx.jevGate`를 직접 넣는다. 회귀 테스트 `harness pins jev off … (R7)`가 두 변수를 export한 상태에서도 hook이 `null`인지 확인한다. 하네스를 쓰지 않고 `new Engine`을 직접 만드는 테스트에는 이 기본값이 적용되지 않는다 |
-| Q1 | `touches_target`에 criteria를 둘지 | — | 평가 후 결정 |
+| Q1 | ~~`touches_target`에 criteria를 둘지~~ | — | **결정 (2026-09-25): 둔다.** tune 비교에서 문구 후보 3개 중 criteria 추가(V1)가 가장 좋았다 (정확도 0.81 → 0.85). 질문 자체를 바꾼 후보(V2, V3)는 더 나빴다 (§4.4) |
 | Q2 | on 모드를 만들지, 만든다면 어떤 조건(예: LLM과 Jev가 일치할 때만)에서 쓸지 | — | shadow eval 결과로 결정 |
 
 ## 7. 리뷰 체크

@@ -113,6 +113,39 @@ class RequestAndScoreTests(unittest.TestCase):
         self.assertEqual(jo._short("dynamic-agents 브랜치 push: 리뷰용"), "dynamic-agents 브랜치 push")
         self.assertEqual(len(jo._short("x" * 40)), 24)
 
+    @staticmethod
+    def _resp(fit: dict, scope: list, rev: list) -> dict:
+        a = {"best_match": {"type": "choice", "probabilities": fit}}
+        for i, (s, r) in enumerate(zip(scope, rev)):
+            a[f"in_scope_{i + 1}"] = {"type": "noul", "noul": s}
+            a[f"reversible_{i + 1}"] = {"type": "noul", "noul": r}
+        return {"answers": a}
+
+    def test_composite_uses_fit_relative_to_best_and_flags_weak_properties(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.62, 0.9], [0.24, 0.5])
+        (s1, w1), (s2, w2) = jo.composite(2, resp["answers"])
+        self.assertAlmostEqual(s1, 0.5 * 0.62 * 0.24, places=6)
+        self.assertAlmostEqual(s2, 1.0 * 0.9 * 0.5, places=6)
+        self.assertEqual(w1, ["되돌리기 어려움"])
+        self.assertEqual(w2, [])
+        # 선택지 수와 무관: 부합이 전부 같으면 부합 몫은 1로 본다
+        same = self._resp({"1": 0.3, "2": 0.3, "3": 0.3, "none": 0.1}, [0.5, 0.5, 0.2], [0.5, 0.5, 0.5])
+        scores = jo.composite(3, same["answers"])
+        self.assertAlmostEqual(scores[0][0], 0.25, places=6)
+        self.assertEqual(scores[2][1], ["범위 밖"])
+        # 부합이 모두 0이면 0으로 나누지 않는다
+        zero = self._resp({"1": 0.0, "2": 0.0, "none": 1.0}, [1, 1], [1, 1])
+        self.assertEqual([s for s, _ in jo.composite(2, zero["answers"])], [0.0, 0.0])
+
+    def test_render_shows_composite_warning_and_top(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.62, 0.9], [0.24, 0.5])
+        text = jo.render(["a", "b"], resp, "jev")
+        self.assertIn("1 a 0.10/0.62/0.24 종합 0.07 ⚠되돌리기 어려움", text)
+        self.assertIn("2 b 0.20/0.90/0.50 종합 0.45", text)
+        self.assertIn("종합 최고 2", text)
+        self.assertIn("해당 없음 0.70", text)
+        self.assertNotIn("\n", text)
+
 
 class HookTests(unittest.TestCase):
     def test_off_by_default(self):
