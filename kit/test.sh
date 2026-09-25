@@ -12,6 +12,8 @@ echo "== freshness (오프라인)"
 python3 -m unittest kit/freshness/test_check_docs.py
 echo "== options hook (가짜 점수)"
 python3 -m unittest kit/options/test_jev_options.py
+echo "== install (임시 HOME)"
+python3 -m unittest kit/install/test_jev_install.py
 echo "== check"
 python3 -m unittest kit/check/test_check.py
 bash kit/scaffolds/verify.sh "${1:-all}"

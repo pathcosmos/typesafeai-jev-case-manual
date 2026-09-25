@@ -211,6 +211,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | Q6 평가 자동화 | **결정: 합성셋 + replay. 완료 (kit 0.1.12)**: `templates/evalset.md`(템플릿), `kit/eval/build.py`(builder), `kit/eval/replay.py`, 예시 `kit/eval/examples/triage`. replay 정의(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
 | Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트. 완료 (kit 0.1.13)**: `kit/freshness/check_docs.py`, 기준선 `baseline.json`(2026-09-25), GitHub Actions `jev-freshness`(매주 월 09:00 KST, 변화 시 이슈. Cloudflare 등 별도 인프라 불필요). 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
 | 에이전트 선택지 점수 hook | **완료 (kit 0.1.18)**: `kit/options/jev_options.py`. Stop hook이 응답의 번호 목록 선택지를 찾아 선택지별 요청 부합(Choice)·범위 안·되돌림 가능(Noul)을 한 줄로 표시. 가짜 모드와 실제 Jev 모드(`JEV_OPTIONS=jev`, 키 필요). CLI·데스크톱에서 표시 확인, 대화상자 설명 수정은 화면 미반영. 플러그인에 자동 등록하지 않음(Q3). 근거: `research/agent-choice-scoring.md`. 남은 것: 평가셋 |
+| 설치형 배포 | **완료 (kit 0.1.23)**: `install.sh`(부트스트랩) + `kit/install/jev_install.py`(install / doctor / uninstall). 플러그인 `hooks/hooks.json`에 선택지 hook을 넣고(모드 off면 무동작, Q3 유지), 기기별 설정은 `~/.config/jev/env` 하나. 규약은 `SessionStart` hook이 전달. Codex hook 자동 등록(신뢰는 사용자). 예전 수동 설정 자동 정리 |
 | 서버 (Cloudflare) | **보류 (2026-09-25, 사용자 판단: 로컬로 충분)**. 실제 키로 로컬 경로를 모두 확인했다: measure·replay, dynamic-agents `decideGate`와 shadow hook, Python/TS scaffold, 선택지 hook 실제 모드. 키는 각 머신의 환경변수로 둔다. 다시 검토할 때: 여러 사람·머신이 같은 키와 예산을 공유해야 하거나 결과 대시보드가 필요할 때 (키 프록시, 예산, 로그 마스킹) |
 
 ## 11. 결정 사항 (2026-09-25 확정: 제안대로)

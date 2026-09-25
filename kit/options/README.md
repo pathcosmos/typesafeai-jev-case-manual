@@ -10,30 +10,28 @@
 
 모드는 둘이다. `JEV_OPTIONS=fake`는 실제 요청과 같은 모양에 결정적인 가짜 값을 채우고 **외부로 아무것도 보내지 않는다.** `JEV_OPTIONS=jev`는 `TYPESAFE_API_KEY`가 있을 때만 **요청 1건**을 api.typesafe.ai로 보낸다. 보내는 것은 마지막 사용자 요청, 선택지 앞 문맥(최대 12줄), 선택지 텍스트다 (필드당 2,000자 상한). 키가 없거나 실패(401, 타임아웃, 응답 누락)하면 **아무것도 표시하지 않고** 에이전트를 막지 않는다. 재시도하지 않고 시간 상한은 `JEV_OPTIONS_TIMEOUT`(기본 4초)이다. 실제 모드 출력에는 `[가짜 점수]` 태그가 없다.
 
-## 연결 (플러그인에 자동 등록하지 않는다)
+## 설치와 켜기 (`install.sh`)
 
-플러그인 설치만으로 켜지지 않게, 쓰는 사람이 직접 연결한다 (INTENT Q3: 자동 hook 없음). `KIT`는 이 킷의 클론 경로다.
+hook은 플러그인(`hooks/hooks.json`)에 들어 있지만 **모드가 `off`(기본)면 아무것도 하지 않는다.** 설치만으로 켜지지 않는다 (INTENT Q3). 켜고 끄는 것은 기기마다 설정 파일 하나 `~/.config/jev/env`(권한 600)로 한다.
 
-**Claude Code** (`~/.claude/settings.json` 또는 프로젝트 `.claude/settings.json`):
-
-```json
-{
-  "env": {"JEV_OPTIONS": "fake"},
-  "hooks": {
-    "Stop": [{"hooks": [{"type": "command", "command": "python3 KIT/kit/options/jev_options.py"}]}],
-    "PreToolUse": [{"matcher": "AskUserQuestion", "hooks": [{"type": "command", "command": "python3 KIT/kit/options/jev_options.py"}]}]
-  }
-}
+```bash
+# 다른 기기: 킷을 ~/.local/share/jev-kit에 받고 Claude 플러그인, Codex hook을 연결한다. 키는 화면에 표시되지 않게 입력받는다
+curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manual/main/install.sh | bash -s -- --options jev
+# 이미 받은 클론에서
+./install.sh --options jev                       # 모드 jev, 키 입력
+./install.sh --options jev --key-env-file PATH   # 키를 복사하지 않고 다른 dotenv 파일의 TYPESAFE_API_KEY를 읽게 한다
+./install.sh doctor --live                       # 상태 점검 (+ 합성 선택지로 점수 호출 1회)
+./install.sh uninstall                           # 끄기 (키는 남김) · --purge: 플러그인과 설정 파일까지 제거
 ```
 
-**Codex** (`~/.codex/hooks.json`의 `Stop`에 같은 명령. 환경변수는 Codex를 실행하는 셸에서 export한다).
+| 대상 | 설치기가 하는 일 |
+| --- | --- |
+| `~/.config/jev/env` | `JEV_OPTIONS`(off/fake/jev), `TYPESAFE_API_KEY` 또는 `JEV_OPTIONS_ENV_FILE`. hook은 **환경변수가 있으면 그것을 먼저** 쓴다 (세션 하나만 끄기: `JEV_OPTIONS=off claude`) |
+| Claude Code | 킷 디렉터리를 marketplace `jev-kit`로 등록하고 `jev@jev-kit` 설치·갱신. hook은 `SessionStart`(켜져 있을 때 [선택지 표시 규약](convention.md)을 에이전트 맥락에 넣음), `Stop`, `PreToolUse`(`AskUserQuestion`) |
+| Codex | `~/.codex/hooks.json`에 `Stop`, `SessionStart` 추가 (모드가 off면 넣지 않는다). **Codex CLI의 `/hooks`에서 신뢰해야 실행된다** |
+| 예전 수동 설정 | settings.json의 `jev_options.py` hook과 `JEV_OPTIONS*` env, CLAUDE.md·AGENTS.md의 규약 블록을 지운다. 다른 hook과 내용은 그대로 둔다. 고치는 파일은 `*.bak-<시각>`으로 백업 |
 
-hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
-
-**전역 실제 모드 예 (이 머신, 2026-09-25):** 키를 설정 파일에 복사하지 않고 `JEV_OPTIONS_ENV_FILE`로 한 곳에서 읽는다. 기존 hook은 그대로 두고 **추가만** 했다 (백업: `*.bak-<시각>`).
-- Claude Code `~/.claude/settings.json`: `env`에 `JEV_OPTIONS=jev`, `JEV_OPTIONS_ENV_FILE=<.env 경로>`. `Stop`과 `PreToolUse`(`AskUserQuestion`)에 `python3 KIT/kit/options/jev_options.py` (timeout 10).
-- Codex `~/.codex/hooks.json`: `Stop`에 `JEV_OPTIONS=jev JEV_OPTIONS_ENV_FILE=<.env 경로> python3 KIT/kit/options/jev_options.py` (Codex 명령은 셸로 실행된다). **새 hook은 Codex CLI의 `/hooks`에서 신뢰(trust)해야 실행된다.**
-- 끄기: Claude는 `env.JEV_OPTIONS`를 `off`로 바꾸거나 hook 항목을 지운다. Codex는 `/hooks`에서 끄거나 항목을 지운다.
+여러 번 실행해도 결과가 같다. 저장소가 private이면 그 기기에서 먼저 `gh auth login`을 한다. 테스트: `python3 -m unittest kit/install/test_jev_install.py` (임시 HOME과 가짜 claude/codex로 7개).
 
 ## 동작
 
@@ -69,19 +67,9 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 
 ## 선택지가 잘 잡히게 하려면
 
-엄격한 규칙이라 표나 긴 문단 속 선택지는 놓친다 (research §5: 오탐 0, 재현율 낮음). 에이전트 지침(전역 `~/.claude/CLAUDE.md`, `~/.codex/AGENTS.md` 또는 프로젝트 지침)에 아래 규약을 넣는다. 이 블록이 규약의 원본이다:
-
-```markdown
-## 선택지 표시 규약
-
-사용자에게 방향이나 다음 작업을 고르게 할 때는 아래 형식을 따른다. 선택지 점검 hook(jev-kit `kit/options`)이 이 형식을 읽는다.
-
-- 선택지는 **번호 목록**(`1.` `2.` `3.`)으로 2~9개 쓴다. 항목마다 한 줄로, 무엇을 하는지가 먼저 오게 쓴다. 표나 코드 블록 안에 선택지를 넣지 않는다.
-- 목록 **바로 다음 줄**에 짧은 질문 한 줄을 붙인다 (예: `어느 것으로 진행할까요? (추천: 1)`). 사이에 다른 문단을 넣지 않는다.
-- 추천은 질문 줄에 적는다. 선택지 문구에 "(추천)"이나 설득하는 표현을 넣지 않는다 (점수가 문구에 끌려간다).
-- 선택이 아닌 목록(작업 요약, 진행 단계)은 번호 목록 바로 뒤에 질문을 붙이지 않는다.
-- 선택 대화상자 도구(AskUserQuestion, request_user_input)를 쓸 때는 이 규약이 필요 없다.
-```
+엄격한 규칙이라 표나 긴 문단 속 선택지는 놓친다 (research §5: 오탐 0, 재현율 낮음). 그래서 에이전트가 **[선택지 표시 규약](convention.md)**을 따르게 한다. 이 파일이 규약의 원본이다.
+- Claude Code와 Codex는 설치기가 연결한 `SessionStart` hook이 **켜져 있을 때만** 규약을 에이전트 맥락에 넣는다. CLAUDE.md나 AGENTS.md를 고칠 필요가 없다.
+- 그 밖의 에이전트는 규약 파일 내용을 그 에이전트의 지침에 붙여 넣는다.
 
 규약을 따르지 않는 목록(예: 작업 요약 바로 뒤의 질문 줄)은 선택지로 잡힐 수 있다. 규약의 "선택이 아닌 목록 뒤에 질문을 붙이지 않는다"가 이것을 막는다.
 

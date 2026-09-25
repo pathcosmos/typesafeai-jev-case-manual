@@ -9,6 +9,8 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
 요청과 가장 맞는 선택지 (Choice, 판정이 아니라 요청 부합). 결정은 사람이 한다.
 
 환경변수 (hook 프로세스에 전달되어야 한다):
+  설정 파일 ~/.config/jev/env (또는 JEV_OPTIONS_CONFIG): 아래 변수가 환경에 없으면 이 파일의 JEV_OPTIONS, TYPESAFE_API_KEY,
+                       JEV_OPTIONS_ENV_FILE을 읽는다 (install.sh가 만든다, 권한 600). 환경변수가 파일보다 우선한다
   JEV_OPTIONS          off(기본) | fake | jev
                        fake: 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다
                        jev:  TYPESAFE_API_KEY가 있을 때만 api.typesafe.ai에 요청 1건을 보낸다 (요청 텍스트, 선택지 앞 문맥, 선택지).
@@ -289,11 +291,46 @@ def log_request(req: dict, event: str, env: dict):
 
 
 # ---------------- hook 진입점 ----------------
+CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE")
+CONVENTION = Path(__file__).with_name("convention.md")
+DEFAULT_CONFIG = "~/.config/jev/env"  # 테스트는 이 값을 없는 경로로 바꾼다
+
+
+def read_config(path: str) -> dict:
+    """dotenv 형식 설정 파일에서 CONFIG_KEYS만 읽는다. 다른 줄은 무시한다."""
+    out: dict = {}
+    try:
+        for line in Path(os.path.expanduser(path)).read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line.startswith("export "):
+                line = line[7:].lstrip()
+            k, sep, v = line.partition("=")
+            if sep and k in CONFIG_KEYS:
+                out[k] = v.strip().strip('"').strip("'")
+    except OSError:
+        pass
+    return out
+
+
+def effective_env(env: dict) -> dict:
+    """환경변수 + 설정 파일. 환경에 있는 값이 우선한다 (세션 하나만 끄거나 바꿀 수 있게)."""
+    conf = read_config(env.get("JEV_OPTIONS_CONFIG") or DEFAULT_CONFIG)
+    return {**{k: v for k, v in conf.items() if v}, **{k: v for k, v in env.items() if v != ""}}
+
+
 def handle(payload: dict, env: dict) -> dict | None:
+    env = effective_env(env)
     mode = (env.get("JEV_OPTIONS") or "off").strip().lower()
     if mode not in ("fake", "jev"):
         return None
     event = payload.get("hook_event_name")
+    if event == "SessionStart":
+        # 켜져 있을 때만 선택지 표시 규약을 에이전트 맥락에 넣는다 (CLAUDE.md를 기기마다 고치지 않도록)
+        try:
+            text = CONVENTION.read_text(encoding="utf-8").strip()
+        except OSError:
+            return None
+        return {"hookSpecificOutput": {"hookEventName": "SessionStart", "additionalContext": text}}
     user_request = last_user_text(payload.get("transcript_path"))
     if event == "Stop":
         if payload.get("stop_hook_active"):

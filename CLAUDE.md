@@ -64,5 +64,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `research/`의 커뮤니티 자료는 신뢰도 태그([O]/[3P]/[C]/[?])를 유지한다. [C]나 [?] 수치를 공식 사실처럼 인용하지 않는다.
 - `sources.md`의 "불일치 · 미확인 항목"(D1~D13)은 사실로 인용하지 않는다. live docs를 다시 확인할 때 이 표를 갱신한다.
 - **live docs 변화 점검**: `python3 kit/freshness/check_docs.py` (주간 리포트와 같은 것). 리포트의 페이지를 읽고 지식 베이스를 고친 뒤 sources.md 확인일을 갱신하고, 마지막에 `--update-baseline`을 실행한다. 리포트만 보고 기준선을 먼저 갱신하지 않는다. sources.md에 추적 페이지를 추가해도 기준선을 갱신한다.
-- `cases/`는 킷 절차 8단계가 실제 적용 결과로 만든다 (사본). 적용 대상 프로젝트는 추측해서 고르지 말고 사용자에게 확인한다. INTENT.md §8의 열린 질문은 2026-09-25에 모두 결정되었다 (Q6 완료: `templates/evalset.md`, `kit/eval/`. Q7: `kit/freshness/`. 확장: 에이전트 선택지 점수 hook `kit/options/` 1차, 가짜 점수).
+- `cases/`는 킷 절차 8단계가 실제 적용 결과로 만든다 (사본). 적용 대상 프로젝트는 추측해서 고르지 말고 사용자에게 확인한다. INTENT.md §8의 열린 질문은 2026-09-25에 모두 결정되었다 (Q6 완료: `templates/evalset.md`, `kit/eval/`. Q7: `kit/freshness/`. 확장: 에이전트 선택지 점수 hook `kit/options/`(실제 모드), 설치형 배포 `install.sh` + `kit/install/`).
 - git 저장소다 (브랜치 `main`). `.remember/`는 커밋하지 않는다.

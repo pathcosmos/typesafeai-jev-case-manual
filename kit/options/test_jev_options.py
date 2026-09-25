@@ -14,6 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import jev_options as jo  # noqa: E402
+jo.DEFAULT_CONFIG = "/nonexistent/jev-test-config"  # 이 기기의 실제 ~/.config/jev/env를 읽지 않게
 
 KO = """R7 수정이 끝났습니다. 다음으로 할 수 있는 일:
 
@@ -189,10 +190,18 @@ class HookTests(unittest.TestCase):
         self.assertEqual(ti["questions"][0]["options"][0]["description"], "warm")  # 원본은 그대로
         self.assertEqual(out["hookSpecificOutput"]["hookEventName"], "PreToolUse")
 
+    def test_session_start_injects_convention_only_when_on(self):
+        self.assertIsNone(jo.handle({"hook_event_name": "SessionStart"}, {}))
+        out = jo.handle({"hook_event_name": "SessionStart"}, FAKE)
+        ctx = out["hookSpecificOutput"]["additionalContext"]
+        self.assertEqual(out["hookSpecificOutput"]["hookEventName"], "SessionStart")
+        self.assertIn("선택지 표시 규약", ctx)
+        self.assertIn("바로 다음 줄", ctx)
+
     def test_cli_never_blocks_on_bad_input(self):
         for stdin in ("not json", "{}", json.dumps({"hook_event_name": "Stop", "last_assistant_message": KO})):
             p = subprocess.run([sys.executable, str(HERE / "jev_options.py")], input=stdin, capture_output=True, text=True,
-                               env={"JEV_OPTIONS": "fake", "PATH": "/usr/bin:/bin"})
+                               env={"JEV_OPTIONS": "fake", "PATH": "/usr/bin:/bin", "JEV_OPTIONS_CONFIG": "/nonexistent/jev-test-config"})
             self.assertEqual(p.returncode, 0, stdin)
         self.assertIn("systemMessage", p.stdout)
 
@@ -259,6 +268,17 @@ class JevModeTests(unittest.TestCase):
         self.assertEqual(MockJev.calls[-1]["auth"], "Bearer file-key")
         self.assertEqual(jo.key_from_env_file(str(f) + ".missing"), "")
         self.assertEqual(jo.key_from_env_file(None), "")
+
+    def test_config_file_supplies_mode_and_key_env_wins(self):
+        cfg = Path(tempfile.mkdtemp()) / "env"
+        cfg.write_text("JEV_OPTIONS=jev\nTYPESAFE_API_KEY=cfg-key\nOTHER=ignored\n", encoding="utf-8")
+        env = {k: v for k, v in self.env.items() if k not in ("TYPESAFE_API_KEY", "JEV_OPTIONS")}
+        out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, {**env, "JEV_OPTIONS_CONFIG": str(cfg)})
+        self.assertIsNotNone(out)
+        self.assertEqual(MockJev.calls[-1]["auth"], "Bearer cfg-key")
+        # 환경의 JEV_OPTIONS=off가 파일의 jev보다 우선한다 (세션 하나만 끄기)
+        self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN}, {**env, "JEV_OPTIONS_CONFIG": str(cfg), "JEV_OPTIONS": "off"}))
+        self.assertEqual(jo.read_config(str(cfg)), {"JEV_OPTIONS": "jev", "TYPESAFE_API_KEY": "cfg-key"})
 
     def test_failures_show_nothing(self):
         for mode, extra in (("401", {}), ("partial", {}), ("slow", {"JEV_OPTIONS_TIMEOUT": "0.5"})):
