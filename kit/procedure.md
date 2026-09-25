@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.11 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.12 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -124,6 +124,7 @@
 1. 입력을 준비한다 (형식은 `KIT/kit/measure/README.md`):
    - `RUN/questions.json`: 적용한 `questions` 모듈과 같은 내용의 HTTP API 형식 questions map
    - `RUN/samples.jsonl`: 합성 표본(설계한 경계 사례 포함) 또는 사용자가 제공하거나 승인한 표본. 가능하면 `label`을 붙인다. 커밋하지 않는다.
+   - 평가셋을 만들 때는 `KIT/templates/evalset.md` 형식의 `RUN/cases.json`을 쓰고 `KIT/kit/eval/build.py`로 split별 samples를 만든다. state는 프로젝트의 state 함수를 부르는 어댑터(`RUN/state.*`)로 만든다. 질문별 `label`과 결정 `gold`를 둘 다 붙이고, 한국어 입력이 있으면 `--require-lang ko`로 원문 한국어 케이스가 있는지 확인한다.
    - 먼저 `--dry-run`으로 spec 검증과 비용 추정을 확인한다.
 2. `KIT/kit/measure/measure.py`가 있으면 실행한다 (예산 상한을 지킨다):
    ```bash

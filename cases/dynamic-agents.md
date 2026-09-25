@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 9e8fb2b (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 a7788f5 (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -167,12 +167,12 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 
 | 항목 | 값 |
 | --- | --- |
-| 위치 | `.jev/eval/`: `build.mjs`(케이스 정의, 재생성), `questions.json`(`GATE_QUESTIONS`에서 생성해 문구가 코드와 같음), `samples.tune.jsonl` 20건, `samples.test.jsonl` 18건, `gold.json` |
+| 위치 | `.jev/eval/`: `cases.json`(케이스 정의, KIT `templates/evalset.md` 형식), `state.mjs`(state 어댑터, `jevGateState` 호출), `policy.mjs`(replay 어댑터), `questions.json`(`GATE_QUESTIONS`에서 생성해 문구가 코드와 같음), `samples.tune.jsonl` 20건, `samples.test.jsonl` 18건. 재생성: `python3 KIT/kit/eval/build.py --cases .jev/eval/cases.json --questions .jev/eval/questions.json --state-cmd "node .jev/eval/state.mjs" --gold-field gold_affects --require-lang ko` |
 | state | 운영 코드 `jevGateState()`로 만든다 (필드 이름, 자르기, 상한이 운영과 같다) |
 | 구성 (38건) | 명확한 yes 6, 표현만 바꿈 4, 무관한 변경 4, 모호한 요약 3, adversarial 3, 경계 4 (케이스 기준 24개). 이 중 14개는 **en/ko 쌍** (`-en`/`-ko`, 같은 gold, 같은 split) → 한국어 슬라이스 14건이자 패러프레이즈 불변(INV) 검사 |
 | 라벨 두 층 | ① noul 3개의 기대값(`label`, measure.py가 채점) ② gate 자체의 gold `affects` (yes 16 / no 17 / unsure 5, unsure = 요약만으로는 알 수 없어 에스컬레이션이 맞는 경우). gold는 `affectsFrom`으로 유도하지 않고 따로 판단했다 (정책을 자기 자신과 비교하지 않기 위해) |
 | 검증 | `measure.py --dry-run` 두 파일 모두 `dry_run`, exit 0 (예상 입력 약 6.2k / 5.8k 토큰, ≈ $0.0003 이하) · 일부러 깨뜨린 spec은 exit 3 · 키 없이 실제 실행하면 exit 2 (skipped) |
-| 한계 | **프로젝트 담당자가 라벨을 검수하지 않았다.** 38건은 임계값을 [측정]으로 바꾸기에 부족하다 (목표 수백 건). 합성 문장이라 실제 에이전트 요약의 분포와 다르다 |
+| 한계 | **한국어 14건은 모두 영어 케이스의 번역 쌍이다.** 패러프레이즈 불변 검사는 되지만 한국어 슬라이스 정확도의 근거는 아니다 (manual/04: 원문 한국어). KIT build가 이를 경고한다 → 원문 한국어 케이스를 추가해야 한다. **프로젝트 담당자가 라벨을 검수하지 않았다.** 38건은 임계값을 [측정]으로 바꾸기에 부족하다 (목표 수백 건). 합성 문장이라 실제 에이전트 요약의 분포와 다르다 |
 | 배선 확인 (측정 아님) | KIT `kit/eval/replay.py` + 어댑터 `.jev/eval/policy.mjs`(실제 `affectsFrom` 호출). noul 라벨로 만든 이상적인 답(0.9/0.1)을 replay: tune 20 / test 18건 모두 gold와 불일치 0, 모호한 5건 모두 unsure, en/ko 쌍 불일치 0. **라벨과 정책 구조가 맞는다는 뜻일 뿐 성능 결과가 아니다** |
 | 다음 | 키가 생기면 split별로 실제 측정 (각 50건 예산 안) → 같은 명령으로 replay: `python3 KIT/kit/eval/replay.py --measure .jev/eval/measure.test.json --samples .jev/eval/samples.test.jsonl --policy-cmd "node .jev/eval/policy.mjs" --gold-field gold_affects --decisions yes,no,unsure --costly yes:no`. 임계값 조정은 tune으로만 한다 |
 

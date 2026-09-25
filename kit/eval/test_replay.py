@@ -90,6 +90,7 @@ class ReplayTests(unittest.TestCase):
         self.assertEqual(out["by_lang"]["ko"]["n"], 2)
         self.assertEqual(out["by_lang"]["ko"]["coverage"], 0.5)
         self.assertEqual(set(out["by_split"]), {"test", "tune"})
+        self.assertEqual(out["by_category"], {})  # category가 없으면 빈 slice
         self.assertEqual(out["counts"]["error"], 1)
         self.assertEqual(out["excluded"]["error"], ["p3-ko"])
 

@@ -1,4 +1,26 @@
-# eval — 결정 수준 replay (INTENT Q6, procedure 6단계 5번)
+# eval — 평가셋 만들기(build)와 결정 수준 replay (INTENT Q6)
+
+| 도구 | 하는 일 | 절차 |
+| --- | --- | --- |
+| `build.py` | 케이스 정의(`cases.json`)와 프로젝트의 state 함수로 `samples.<split>.jsonl`을 만든다 | 6단계 1번 |
+| `replay.py` | measure 결과에 프로젝트의 결정 정책을 다시 적용해서 결정 gold와 비교한다 | 6단계 5번 |
+
+평가셋을 어떻게 구성할지(케이스 구성, 라벨 두 층, 분할, 언어, 규모)는 [templates/evalset.md](../../templates/evalset.md)가 기준이다. 예시: [examples/triage](examples/triage/) (`cases.json`, `questions.json`, `state.py`, `policy.py`).
+
+## build
+
+```bash
+python3 KIT/kit/eval/build.py --cases RUN/cases.json --questions RUN/questions.json \
+  --state-cmd "node RUN/state.mjs" --cwd TARGET --require-lang ko [--gold-field gold] [--budget 50]
+```
+
+- **state는 프로젝트 코드로 만든다.** state 어댑터 계약: stdin `{"id", "input"}` JSONL → stdout `{"id", "state"}` JSONL. `input`은 케이스의 `input`에 언어 변형을 병합한 것이다 (객체는 키 단위 병합, 리스트와 값은 교체). state가 `null`이면 오류다 (운영에서 API에 도달하지 않는 입력).
+- **출력**: `--out-dir`(기본: cases 파일 위치)에 `samples.<split>.jsonl`. 표본 필드는 `id`, `state`, `label`, `<gold-field>`, `lang`, `pair`, `split`, `category`로, measure와 replay가 그대로 읽는다. 변형이 둘 이상인 케이스만 id에 `-<lang>`이 붙는다.
+- **오류 (exit 3, 아무 파일도 쓰지 않음)**: 중복 id, `gold_values` 밖의 gold, split·gold·label 누락, 라벨 문제(measure의 `check_labels`와 같은 기준: 모르는 키, 타입 불일치), questions spec 오류. 한 번에 모두 보고한다.
+- **state 명령 오류 (exit 5)**: 실패, id 누락·초과·중복, JSON이 아닌 줄, `null` state.
+- **경고 (파일은 씀)**: 권장 category 누락(`clear`, `boundary`, `adversarial`, escalate가 있으면 `escalate`), 결정 값별 `clear` 누락, `--require-lang` 언어 없음 또는 **번역 쌍뿐임**, split에 gold 값 누락, split이 `--budget` 초과, 만들어진 state의 명령어+URL(WAF), 이메일·전화번호·내부 호스트처럼 보이는 문자열.
+
+## replay
 
 `measure.py`는 **질문별** 정확도(noul/choice/score 라벨)를 잰다. 운영에서 중요한 것은 그 답들을 코드가 합친 **최종 결정**(예: yes / no / unsure)이 맞는지다. `replay.py`는 `measure.json`의 답에 프로젝트의 결정 정책을 다시 적용해서 결정 수준 gold와 비교한다.
 
@@ -76,4 +98,6 @@ Python이면 `from app.jev.policy import decide`를 불러 같은 형식으로 �
 
 키가 없을 때도 어댑터와 라벨이 맞는지 확인할 수 있다. 질문별 라벨로 이상적인 답(yes → 0.9, no → 0.1)을 채운 `measure.json`을 만들어 replay한다. 여기서 gold와 어긋나는 표본은 **라벨과 정책 구조가 서로 맞지 않는 곳**이다 (답이 완벽해도 틀림). 이 수치는 측정이 아니므로 케이스 문서의 결과로 쓰지 않는다. `models`에 측정이 아님을 표시해 둔다.
 
-테스트: `python3 -m unittest kit/eval/test_replay.py -v` (7개: 지표, split·언어·쌍, 제외 집계, 입력 오류, 정책 하드 실패 5종, `--decisions`, Wilson 상한).
+`category`가 있으면 `by_category`로도 나눠 본다 (adversarial, boundary의 오류율을 따로 확인).
+
+테스트: `python3 -m unittest kit/eval/test_build.py kit/eval/test_replay.py -v` (build 7개: 예시 빌드, measure dry-run과 replay 연결, 케이스 오류, state 어댑터 실패, 경고, 번역 쌍뿐인 한국어, 병합 규칙 · replay 7개: 지표, split·언어·쌍, 제외 집계, 입력 오류, 정책 하드 실패 5종, `--decisions`, Wilson 상한).

@@ -172,7 +172,8 @@ def main(argv: list[str] | None = None) -> int:
             warns.append(f"{sid}: gold 필드 {a.gold_field!r}가 없다 (제외)")
             continue
         rows.append({"id": sid, "gold": gold, "answers": r.get("answers", {}),
-                     "lang": s.get("lang"), "split": s.get("split"), "pair": s.get("pair")})
+                     "lang": s.get("lang"), "split": s.get("split"), "pair": s.get("pair"),
+                     "category": s.get("category")})
     for w in warns:
         sys.stderr.write(f"warning: {w}\n")
     counts = {"samples": len(samples), "usable": len(rows), **{k: len(v) for k, v in excluded.items()}}
@@ -197,7 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     out = {**base, "status": "completed", "counts": counts, "excluded": excluded,
            **({"warnings": warns} if warns else {}),
            "overall": metrics(rows, a.escalate, costly),
-           "by_split": slice_by("split"), "by_lang": slice_by("lang"),
+           "by_split": slice_by("split"), "by_lang": slice_by("lang"), "by_category": slice_by("category"),
            "pairs": pair_disagreement(rows),
            "per_sample": [{"id": r["id"], "gold": r["gold"], "decision": r["decision"]} for r in rows]}
     write(a.out, out)

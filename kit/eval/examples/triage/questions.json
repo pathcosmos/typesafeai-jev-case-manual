@@ -1,0 +1,5 @@
+{
+  "topic": {"type": "choice", "instructions": "Which team should handle `ticket.message`?",
+            "criteria": {"billing": "Charges, refunds, invoices", "orders": "Delivery, order status, returns", "other": "None of the above"}},
+  "refund_requested": {"type": "noul", "instructions": "Does `ticket.message` ask for money back?"}
+}

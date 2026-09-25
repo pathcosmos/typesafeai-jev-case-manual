@@ -16,6 +16,8 @@
 | 라벨 | 사람이 검수한 골드 라벨. 라벨 기준이 바뀌면(criteria drift) 셋과 문구를 함께 개정한다 |
 | 버전 | 셋, 질문 세트, 모델 버전 ID를 함께 기록한다 |
 
+형식과 도구: [templates/evalset.md](../templates/evalset.md) (케이스 정의 → `kit/eval/build.py` → `measure.py` → `kit/eval/replay.py`). 질문별 라벨과 **결정 gold를 따로** 둔다 (gold를 정책에서 유도하지 않는다). 번역 쌍은 패러프레이즈 불변 검사용이고, 한국어 슬라이스는 원문 한국어 케이스로 만든다.
+
 ## 2. Shadow eval 절차
 
 운영에 영향을 주지 않고 비교한다.
