@@ -104,7 +104,11 @@ class RequestAndScoreTests(unittest.TestCase):
         text = jo.render(["a", "b"], jo.fake_scores(req), "fake")
         self.assertTrue(text.startswith("[가짜 점수]"))
         self.assertIn("판정이 아님", text)
-        self.assertIn("  1. a  ", text)
+        self.assertNotIn("\n", text)  # 데스크톱 앱이 줄마다 접두어를 붙이므로 한 줄
+        self.assertIn(": 1 a ", text)
+        self.assertEqual(jo._short("userAge — camelCase with owner"), "userAge")
+        self.assertEqual(jo._short("dynamic-agents 브랜치 push: 리뷰용"), "dynamic-agents 브랜치 push")
+        self.assertEqual(len(jo._short("x" * 40)), 24)
 
 
 class HookTests(unittest.TestCase):
@@ -123,13 +127,13 @@ class HookTests(unittest.TestCase):
         out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO, "transcript_path": str(tmp),
                          "stop_hook_active": False}, {**FAKE, "JEV_OPTIONS_LOG": str(log)})
         self.assertIn("[가짜 점수]", out["systemMessage"])
-        self.assertIn("3. Q3/Q6 결정", out["systemMessage"])
+        self.assertIn("3 Q3/Q6 결정 ", out["systemMessage"])
         req = json.loads(log.read_text(encoding="utf-8").splitlines()[0])["request"]
         self.assertEqual(req["state"]["user"]["request"], "다음 작업 뭐가 있는지 확인해 줘")  # 도구 결과가 아닌 마지막 사용자 메시지
 
     def test_stop_codex_payload_without_transcript(self):
         out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN, "turn_id": "t1", "stop_hook_active": False}, FAKE)
-        self.assertIn("2. Raise the timeout", out["systemMessage"])
+        self.assertIn("2 Raise the timeout in th…", out["systemMessage"])
 
     def test_stop_hook_active_and_no_options_do_nothing(self):
         self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO, "stop_hook_active": True}, FAKE))
@@ -140,7 +144,7 @@ class HookTests(unittest.TestCase):
                              "options": [{"label": "Red", "description": "warm"}, {"label": "Blue", "description": "cool"}]}]}
         p = {"hook_event_name": "PreToolUse", "tool_name": "AskUserQuestion", "tool_input": ti}
         out = jo.handle(p, FAKE)
-        self.assertIn("1. Red — warm", out["systemMessage"])
+        self.assertIn("1 Red ", out["systemMessage"])
         self.assertNotIn("hookSpecificOutput", out)  # 설명 수정은 기본 끔
         out = jo.handle(p, {**FAKE, "JEV_OPTIONS_REWRITE": "1"})
         new = out["hookSpecificOutput"]["updatedInput"]["questions"][0]["options"]

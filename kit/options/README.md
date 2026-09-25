@@ -3,10 +3,7 @@
 코딩 에이전트가 선택지를 제시하면, 선택지마다 **요청 부합 / 범위 안 / 되돌리기 쉬움** 확률을 한 줄씩 보여 주는 hook이다. "어느 것이 옳은가"는 묻지 않는다. 조사와 근거: [research/agent-choice-scoring.md](../../research/agent-choice-scoring.md).
 
 ```text
-[가짜 점수] Jev 선택지 점검: 요청 부합 / 범위 안 / 되돌리기 쉬움 (확률, 판정이 아님)
-  1. userAge  0.07 / 0.52 / 0.68
-  2. ageInYears  0.40 / 0.75 / 0.80
-  3. age  0.33 / 0.19 / 0.71
+[가짜 점수] Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움, 판정이 아님): 1 userAge 0.25/0.04/0.99 · 2 ageInYears 0.21/0.50/0.57 · 3 age 0.46/0.44/0.06
 ```
 
 (실제 출력. 값은 입력 해시로 만든 가짜라 의미가 없다.)
@@ -82,4 +79,4 @@ hook 설정은 **세션 시작 때** 읽힌다. 새 세션에서 확인한다.
 
 - 단위 테스트 17개 (`python3 -m unittest kit/options/test_jev_options.py`): 한국어·영어 선택지, 작업 단계 목록과 코드 블록 제외, 떨어진 문단의 질문 제외, 한 요청 fan-out과 no-match, 가짜 점수의 결정성, 기본 꺼짐, Claude·Codex Stop payload, AskUserQuestion 표시와 선택적 수정(원본 불변), 잘못된 입력에서도 종료 코드 0.
 - 실제 Claude Code(헤드리스)에 Stop hook으로 연결: 선택지 3개를 찾고, transcript에서 사용자 요청을 읽어 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인).
-- **대화형 CLI 세션 (2026-09-25)**: AskUserQuestion 대화상자에 점수가 붙은 설명이 표시되고, PreToolUse와 Stop의 `systemMessage`가 모두 화면에 나왔다. hook 실행 43~55ms. 전역 표시 규약을 따른 응답에서 선택지를 정확히 잡았다 ([research §4.1](../../research/agent-choice-scoring.md#41-대화형-실측-2026-09-25-claude-code-cli-가짜-점수)). 데스크톱 앱(Code 탭) 표시는 아직 확인하지 않았다.
+- **대화형 CLI 세션 (2026-09-25)**: AskUserQuestion 대화상자에 점수가 붙은 설명이 표시되고, PreToolUse와 Stop의 `systemMessage`가 모두 화면에 나왔다. hook 실행 43~55ms. 전역 표시 규약을 따른 응답에서 선택지를 정확히 잡았다 ([research §4.1](../../research/agent-choice-scoring.md#41-대화형-실측-2026-09-25-claude-code-cli-가짜-점수)). **데스크톱 앱(Code 탭)**에서도 두 hook이 실행되고 대화상자가 수정된 설명으로 실행됐다. 데스크톱 앱은 `systemMessage`의 줄마다 `Stop says:`를 붙여서, 표시를 한 줄 형식으로 바꿨다 ([research §4.2](../../research/agent-choice-scoring.md#42-데스크톱-앱-실측-2026-09-25)).

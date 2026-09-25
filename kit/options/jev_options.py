@@ -169,18 +169,21 @@ def score(req: dict, mode: str) -> dict | None:
 
 
 # ---------------- 표시 ----------------
+def _short(label: str, width: int = 24) -> str:
+    """표시용 짧은 이름: " — 설명"과 ": 설명" 앞부분만, 길면 자른다."""
+    head = re.split(r"\s+—\s+|:\s", label, maxsplit=1)[0].strip() or label
+    return head if len(head) <= width else head[:width - 1] + "…"
+
+
 def render(options: list[str], resp: dict, mode: str) -> str:
+    """한 줄로 만든다. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2)."""
     a = resp["answers"]
     probs = a["best_match"]["probabilities"]
     tag = "[가짜 점수] " if mode == "fake" else ""
-    lines = [f"{tag}Jev 선택지 점검: 요청 부합 / 범위 안 / 되돌리기 쉬움 (확률, 판정이 아님)"]
-    for i, o in enumerate(options):
-        n = i + 1
-        label = o if len(o) <= 48 else o[:47] + "…"
-        lines.append(f"  {n}. {label}  {probs.get(str(n), 0):.2f} / {a[f'in_scope_{n}']['noul']:.2f} / {a[f'reversible_{n}']['noul']:.2f}")
-    if probs.get("none", 0) >= 0.3:
-        lines.append(f"  (어느 선택지도 요청과 맞지 않을 확률 {probs['none']:.2f})")
-    return "\n".join(lines)
+    parts = [f"{i + 1} {_short(o)} {probs.get(str(i + 1), 0):.2f}/{a[f'in_scope_{i + 1}']['noul']:.2f}/{a[f'reversible_{i + 1}']['noul']:.2f}"
+             for i, o in enumerate(options)]
+    tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
+    return f"{tag}Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움, 판정이 아님): " + " · ".join(parts) + tail
 
 
 def annotate_ask(tool_input: dict, per_question: list[dict]) -> dict:
