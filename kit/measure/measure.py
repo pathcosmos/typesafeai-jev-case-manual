@@ -9,12 +9,14 @@
 - samples.jsonl: 한 줄에 {"id": ..., "state": ..., "label": {질문id: 기대값}(선택)}. 합성 데이터나 사용자가 승인한 표본만 쓴다.
 - API 키는 환경변수 TYPESAFE_API_KEY에서만 읽는다. 출력, 로그, 파일에 키와 state 원문을 남기지 않는다.
 - 표준 라이브러리만 쓴다 (대상 프로젝트의 의존성과 무관하게 동작해야 하므로).
+- label 검사: 모르는 질문 id, 타입이 맞지 않는 값, 중복 id는 경고(warnings_labels, stderr)하고 그 라벨은 채점에서 뺀다.
 - 종료 코드: 0 완료(표본별 오류 포함) · 2 건너뜀(키 없음) · 3 잘못된 spec · 4 중단(인증 / 요청 형식 오류)
 출력 스키마와 판정 기준: kit/measure/README.md
 """
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import math
 import os
@@ -25,7 +27,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 PRICE_PER_MTOK = 0.042          # 입력 토큰 기준, 출력 무료 (reference/09, 2026-09-24 확인)
 DEFAULT_BASE_URL = "https://api.typesafe.ai"
 MAX_RETRY_AFTER_S = 10.0
@@ -74,6 +76,39 @@ def load_samples(path: Path) -> list[dict]:
         row.setdefault("id", f"line{n}")
         rows.append(row)
     return rows
+
+
+def check_labels(spec: dict, samples: list[dict]) -> tuple[dict, list[str]]:
+    """채점에 쓸 라벨과 경고 목록. 잘못된 라벨은 조용히 무시하거나 잘못 채점하지 않고(예: noul "false" -> True) 경고 후 뺀다."""
+    labels, warns, seen = {}, [], set()
+    for s in samples:
+        sid = s["id"]
+        if sid in seen:
+            warns.append(f"{sid}: 중복 id (앞 표본의 라벨을 덮어쓴다)")
+        seen.add(sid)
+        raw = s.get("label", {})
+        if not isinstance(raw, dict):
+            warns.append(f"{sid}: label이 객체가 아니다 ({type(raw).__name__})")
+            labels[sid] = {}
+            continue
+        clean = {}
+        for qid, v in raw.items():
+            q = spec.get(qid)
+            if q is None:
+                near = difflib.get_close_matches(qid, list(spec), n=1)
+                warns.append(f"{sid}: label 키 {qid!r}는 질문 id가 아니다" + (f" ({near[0]!r}?)" if near else ""))
+                continue
+            t, crit = q["type"], q.get("criteria")
+            if t == "noul" and not isinstance(v, bool):
+                warns.append(f"{sid}.{qid}: noul 라벨은 true/false여야 한다 ({v!r})")
+            elif t == "choice" and v not in crit:
+                warns.append(f"{sid}.{qid}: choice 라벨 {v!r}가 선택지에 없다")
+            elif t == "score" and (isinstance(v, bool) or not isinstance(v, int) or not 0 <= v < len(crit)):
+                warns.append(f"{sid}.{qid}: score 라벨은 0~{len(crit) - 1} 정수여야 한다 ({v!r})")
+            else:
+                clean[qid] = v
+        labels[sid] = clean
+    return labels, warns
 
 
 # ---------------- HTTP ----------------
@@ -207,6 +242,8 @@ def write(out_path: Path | None, result: dict):
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(text, encoding="utf-8")
     brief = {k: result[k] for k in ("status", "reason", "usage", "samples", "errors", "budget") if k in result}
+    if result.get("warnings_labels"):
+        brief["warnings_labels"] = len(result["warnings_labels"])
     sys.stdout.write(json.dumps(brief, ensure_ascii=False) + "\n")
 
 
@@ -232,7 +269,11 @@ def main(argv: list[str] | None = None) -> int:
         write(a.out, {**base, "status": "invalid_spec", "errors_spec": errs})
         return 3
     samples = load_samples(a.samples)
-    labels = {s["id"]: s.get("label", {}) for s in samples}
+    labels, label_warns = check_labels(spec, samples)
+    for w in label_warns:
+        sys.stderr.write(f"warning: {w}\n")
+    if label_warns:
+        base["warnings_labels"] = label_warns
 
     if a.dry_run:
         est = [len(json.dumps({"state": s["state"], "questions": spec}, ensure_ascii=False)) // 3 for s in samples]

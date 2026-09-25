@@ -213,6 +213,37 @@ class MeasureTests(unittest.TestCase):
         self.assertEqual(MockAPI.calls, [])
         self.assertEqual(out["plan"]["requests"], 2)
 
+    def test_label_warnings_exclude_bad_labels(self):
+        self.samples(["charged twice", "where is my parcel?", "dup"],
+                     labels=[{"topic": "billing", "refund_requestd": True},  # 오타 키
+                             {"topic": "shipping", "refund_requested": "false", "frustration": 3},  # 없는 선택지, 문자열 noul, 범위 밖 score
+                             {"topic": "orders"}])
+        rows = (self.tmp / "s.jsonl").read_text().splitlines()
+        (self.tmp / "s.jsonl").write_text("\n".join(rows + [rows[2]]) + "\n", encoding="utf-8")  # 중복 id s2
+        p, out = self.run_measure("--dry-run")
+        self.assertEqual(p.returncode, 0)
+        w = "\n".join(out["warnings_labels"])
+        self.assertIn("'refund_requestd'", w)
+        self.assertIn("'refund_requested'?", w)  # 가까운 id 제안
+        self.assertIn("'shipping'", w)
+        self.assertIn("true/false", w)
+        self.assertIn("0~2", w)
+        self.assertIn("s2: 중복 id", w)
+        self.assertEqual(len(out["warnings_labels"]), 5)
+        self.assertIn("warning:", p.stderr)
+        # 실제 실행에서도 경고가 남고, 잘못된 라벨은 채점에서 빠진다 (문자열 "false"가 True로 채점되지 않는다)
+        p, out = self.run_measure()
+        self.assertEqual(p.returncode, 0, p.stderr)
+        self.assertEqual(len(out["warnings_labels"]), 5)
+        self.assertEqual(out["questions"]["refund_requested"].get("label_n", 0), 0)
+        self.assertEqual(out["questions"]["topic"]["label_n"], 3)  # s1의 없는 선택지는 빠지고 s0 + s2 두 번(중복 행도 각각 호출된다)
+
+    def test_clean_labels_have_no_warnings(self):
+        self.samples(["a"], labels=[{"topic": "other", "refund_requested": False, "frustration": 0}])
+        p, out = self.run_measure("--dry-run")
+        self.assertNotIn("warnings_labels", out)
+        self.assertEqual(p.stderr, "")
+
 
 if __name__ == "__main__":
     unittest.main()

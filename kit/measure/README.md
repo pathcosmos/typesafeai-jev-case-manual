@@ -15,7 +15,7 @@ python3 kit/measure/measure.py --questions .jev/questions.json --samples .jev/sa
              "criteria": {"billing": "...", "orders": "...", "other": "None of the above"}},
    "urgent": {"type": "noul", "instructions": "Does `ticket.message` convey urgency?"}}
   ```
-- **`samples.jsonl`**: 한 줄에 `{"id": "...", "state": {...}, "label": {"topic": "billing", "urgent": true}}`. `label`은 선택이다. 있으면 정확도와 Noul 임계값 초안(F1 최대)을 계산한다. **합성 데이터나 사용자가 승인한 표본만** 쓰고, `.jev/` 안에 두고 커밋하지 않는다.
+- **`samples.jsonl`**: 한 줄에 `{"id": "...", "state": {...}, "label": {"topic": "billing", "urgent": true}}`. `label`은 선택이다. 있으면 정확도와 Noul 임계값 초안(F1 최대)을 계산한다. **라벨 검사**: 질문 id가 아닌 키(가까운 id를 제안한다), 타입이 맞지 않는 값(noul은 `true`/`false`만, choice는 선택지 키, score는 `0`~`레벨 수-1` 정수), 중복 id를 stderr와 출력의 `warnings_labels`에 경고한다. 키나 값이 잘못된 라벨은 **채점에서 뺀다** (예: 문자열 `"false"`가 yes로 채점되지 않게). 중복 id는 경고만 하고, 뒤 행의 라벨이 앞 행을 덮어쓴다. 경고가 있어도 종료 코드는 바뀌지 않으니 dry-run에서 먼저 확인한다. 표본에 다른 필드(`gold_affects`, `split` 등)를 더 넣어도 무시된다. **합성 데이터나 사용자가 승인한 표본만** 쓰고, `.jev/` 안에 두고 커밋하지 않는다.
 
 ## 안전장치
 
@@ -45,6 +45,7 @@ python3 kit/measure/measure.py --questions .jev/questions.json --samples .jev/sa
 | 키 | 내용 |
 | --- | --- |
 | `status` | `completed` / `skipped` / `invalid_spec` / `aborted` / `dry_run` |
+| `warnings_labels` | 라벨 검사 경고 목록 (있을 때만). 표준 출력 요약에는 개수만 나온다 |
 | `models` | 응답의 실제 모델 버전 |
 | `usage` | `requests`, `input_tokens`, `estimated_cost_usd` ($0.042/Mtok) |
 | `budget` | 상한과 `stopped_by_budget` |
@@ -54,4 +55,4 @@ python3 kit/measure/measure.py --questions .jev/questions.json --samples .jev/sa
 | `threshold_status` | 항상 **[잠정]**이다. 표본은 평가셋이 아니다. [측정]은 manual/04 절차를 거친 뒤에만 붙인다 |
 | `per_sample` | id, 상태, 지연, request_id, 답(확률 포함), 에러 분류 |
 
-테스트: `python3 -m unittest kit/measure/test_measure.py -v`. 로컬 mock API 서버로 11개 시나리오를 확인한다.
+테스트: `python3 -m unittest kit/measure/test_measure.py -v`. 로컬 mock API 서버로 13개 시나리오를 확인한다.
