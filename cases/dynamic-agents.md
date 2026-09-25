@@ -1,10 +1,10 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 d6a2b68 (코드: ae2d41f, fd7666f, 1f08be2, 8f00cc2, d6a2b68) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 main (적용 브랜치는 2026-09-25 병합) · 커밋 c0c72a0 (코드: ae2d41f, fd7666f, 1f08be2, 8f00cc2, d6a2b68) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
 | 항목 | 값 |
 | --- | --- |
-| 프로젝트 / 저장소 | dynamic-agents / `pathcosmos/dynamic-agents` (브랜치 `jev/apply-20260925`) |
+| 프로젝트 / 저장소 | dynamic-agents / `pathcosmos/dynamic-agents` (`main`. 적용 브랜치 `jev/apply-20260925`는 2026-09-25에 `main`으로 병합하고 삭제했다) |
 | 스택 | TypeScript (Node ≥ 24, pnpm, `node:test`), Hono 서버, React UI. 자체 LLM provider 계층(`src/providers/*`: raw fetch + claude/codex CLI) → SDK: JS `@typesafe-ai/sdk` 0.6.0 |
 | 도메인 | AI·에이전트 ([patterns/domain-map](../patterns/domain-map.md)) |
 | 입력 언어 | 혼합 (소스 문자열 기준 한글 약 4%. goal과 change_summary는 에이전트가 쓰고 한국어일 수 있다) — §4에 한국어 슬라이스 **필수** |
