@@ -1,0 +1,69 @@
+# INTENT Q7: 주간 live docs 점검. 바뀐 것이 있을 때만 이슈로 알린다.
+# 문서를 고치거나 기준선을 갱신하거나 커밋하지 않는다 (kit/freshness/README.md).
+name: jev-freshness
+
+on:
+  schedule:
+    - cron: "0 0 * * 1" # 매주 월요일 09:00 KST (00:00 UTC)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: jev-freshness
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check live docs against baseline
+        id: check
+        run: |
+          set +e
+          python3 kit/freshness/check_docs.py --out report.md --json diff.json
+          code=$?
+          set -e
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          # 변화 여부는 diff 내용으로 판단한다 (exit 2는 가져오기 실패가 섞였다는 뜻이라 변화가 있을 수도 없을 수도 있다)
+          changed=$(python3 -c "import json; d=json.load(open('diff.json'))['diff']; print('true' if any(d.values()) else 'false')")
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          cat report.md >> "$GITHUB_STEP_SUMMARY"
+          if [ "$code" -ge 3 ]; then exit "$code"; fi
+
+      - name: Upload report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jev-freshness-report
+          path: |
+            report.md
+            diff.json
+          retention-days: 30
+
+      - name: Open or update issue
+        if: steps.check.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create jev-freshness --color C5DEF5 --description "Weekly live-docs check (kit/freshness)" 2>/dev/null || true
+          url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          printf '\n---\n실행: %s\n' "$url" >> report.md
+          existing=$(gh issue list --label jev-freshness --state open --json number -q '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file report.md
+          else
+            gh issue create --title "Jev 지식 베이스 점검: live docs 변화 ($(date -u +%F))" --label jev-freshness --body-file report.md
+          fi
+
+      - name: Warn on fetch errors only
+        if: steps.check.outputs.changed != 'true' && steps.check.outputs.exit == '2'
+        run: echo "::warning::일부 페이지를 가져오지 못했다 (변화는 없음). 리포트 artifact를 확인한다."

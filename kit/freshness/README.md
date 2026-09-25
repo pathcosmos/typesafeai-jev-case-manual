@@ -26,8 +26,16 @@ python3 kit/freshness/check_docs.py --update-baseline              # 리포트�
 
 `baseline.json`은 커밋한다. 첫 기준선은 2026-09-25에 만들었다 (지식 베이스 확인일 2026-09-24~25 직후). 그 사이에 바뀐 것은 이 도구가 잡지 못한다.
 
-## 주간 실행
+## 주간 실행 (GitHub Actions)
 
-스케줄 작업이 주 1회 이 스크립트를 실행하고, 변화가 있을 때만 리포트를 사용자에게 알린다. 스케줄 작업도 문서를 고치거나 기준선을 갱신하지 않는다.
+[`.github/workflows/jev-freshness.yml`](../../.github/workflows/jev-freshness.yml)이 **매주 월요일 09:00 KST**(00:00 UTC)에 실행한다. 수동 실행: `gh workflow run jev-freshness`.
+
+| 결과 | 동작 |
+| --- | --- |
+| 변화 없음 | 아무것도 하지 않는다 (실행 요약에만 남음) |
+| 변화 있음 | `jev-freshness` 라벨 이슈를 연다. 열린 이슈가 있으면 댓글을 단다 (GitHub 알림으로 도착) |
+| 가져오기 실패만 | 경고만 남긴다 (일시적 실패로 이슈를 만들지 않는다) |
+
+리포트와 diff JSON은 실행마다 artifact로 30일 보관한다. 워크플로도 문서를 고치거나 기준선을 갱신하거나 커밋하지 않는다 (권한: `contents: read`, `issues: write`). 이슈를 처리한 뒤 로컬에서 문서를 고치고 `--update-baseline`을 커밋하면 다음 주부터 새 기준선으로 비교한다.
 
 테스트: `python3 -m unittest kit/freshness/test_check_docs.py -v` (5개, fetch를 바꿔 끼워 네트워크 없이 확인).
