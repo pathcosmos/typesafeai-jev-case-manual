@@ -1,4 +1,4 @@
-<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 1d7108d (코드: ae2d41f, fd7666f) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
+<!-- 사본. 원본: pathcosmos/dynamic-agents (로컬 /Users/lanco/taketimes/dynamic-agents) docs/jev-case.md · 브랜치 jev/apply-20260925 · 커밋 a5d072f (코드: ae2d41f, fd7666f, 1f08be2) · 비밀 정보, 운영 데이터, 표본 원문 없음 -->
 
 # Case: dynamic-agents
 
@@ -161,7 +161,19 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | 한국어 슬라이스 | 원문 한국어 goal/summary. 필수 |
 | 분할 | 튜닝 / 테스트 분리 (섞지 않는다) |
 | 라벨 방법 | 미정 — 프로젝트 담당자가 yes/no를 골드로 검수 |
-| 저장 위치 | 미정 (질문 세트 버전과 모델 버전을 함께 기록) |
+| 저장 위치 | 지금은 로컬 `.jev/eval/` (커밋하지 않음, 아래 초기 합성셋). 추적 경로로 옮길지는 미정 (질문 세트 버전과 모델 버전을 함께 기록) |
+
+**초기 합성셋 (2026-09-25, dry-run만 실행)**: 로컬 원장 `data/dynamic-agents.db`에는 `questions` 행과 `gate.evaluated` 이벤트가 없어서(개수만 셈) 출처 ①을 쓸 수 없었다. 대신 손으로 쓴 합성 케이스로 시작한다. 운영 데이터는 쓰지 않았다.
+
+| 항목 | 값 |
+| --- | --- |
+| 위치 | `.jev/eval/`: `build.mjs`(케이스 정의, 재생성), `questions.json`(`GATE_QUESTIONS`에서 생성해 문구가 코드와 같음), `samples.tune.jsonl` 20건, `samples.test.jsonl` 18건, `gold.json` |
+| state | 운영 코드 `jevGateState()`로 만든다 (필드 이름, 자르기, 상한이 운영과 같다) |
+| 구성 (38건) | 명확한 yes 6, 표현만 바꿈 4, 무관한 변경 4, 모호한 요약 3, adversarial 3, 경계 4 (케이스 기준 24개). 이 중 14개는 **en/ko 쌍** (`-en`/`-ko`, 같은 gold, 같은 split) → 한국어 슬라이스 14건이자 패러프레이즈 불변(INV) 검사 |
+| 라벨 두 층 | ① noul 3개의 기대값(`label`, measure.py가 채점) ② gate 자체의 gold `affects` (yes 16 / no 17 / unsure 5, unsure = 요약만으로는 알 수 없어 에스컬레이션이 맞는 경우). gold는 `affectsFrom`으로 유도하지 않고 따로 판단했다 (정책을 자기 자신과 비교하지 않기 위해) |
+| 검증 | `measure.py --dry-run` 두 파일 모두 `dry_run`, exit 0 (예상 입력 약 6.2k / 5.8k 토큰, ≈ $0.0003 이하) · 일부러 깨뜨린 spec은 exit 3 · 키 없이 실제 실행하면 exit 2 (skipped) |
+| 한계 | **프로젝트 담당자가 라벨을 검수하지 않았다.** 38건은 임계값을 [측정]으로 바꾸기에 부족하다 (목표 수백 건). 합성 문장이라 실제 에이전트 요약의 분포와 다르다 |
+| 다음 | 키가 생기면 split별로 실제 실행 (각 50건 예산 안) → `per_sample` noul에 `affectsFrom`을 적용해 gold와 비교하는 replay 단계가 필요하다 (measure.py는 noul별 정확도만 계산한다. 아직 만들지 않았다) |
 
 ### 4.2 지표와 채택 기준
 
@@ -200,7 +212,7 @@ shadow는 결정을 바꾸지 않으므로 모든 실패의 fallback은 **기존
 | R4 | shadow가 LLM보다 느리면 gate 한 건이 최대 8초 늘어난다 | tick 지연 | 총 시간 상한. 측정 후 조정 |
 | R5 | `@typesafe-ai/sdk`가 런타임 dependency가 되어 배포되는 `dyagent` 패키지도 의존하게 된다 | 설치 크기, 공급망 | 버전 고정 0.6.0. 필요하면 optional 로딩 검토 |
 | R6 | rate_limit 경로에서는 shadow 결과가 기록되지 않는다 | 표본 편향(작음) | 다음 틱에 다시 기록된다. 필요하면 별도 이벤트 검토 |
-| R7 | 테스트 하네스는 `ctx.jevGate`를 정하지 않아 모드를 `process.env`에서 읽는다. 셸에 `DYAGENT_JEV_GATE=shadow`와 `TYPESAFE_API_KEY`를 둘 다 export한 채 `pnpm test`를 돌리면 기존 gate·시나리오 테스트가 실제 API를 부르고 원장에 `jev` 키가 생긴다 | 과금, deep-equality·결정성 테스트 실패 가능 | 테스트는 두 변수를 export하지 않은 셸에서 돌린다. 후속 과제(별도 승인 필요): `test/helpers/harness.ts`에서 `jevGate: null`을 기본값으로 둔다 |
+| R7 | 테스트 하네스는 `ctx.jevGate`를 정하지 않아 모드를 `process.env`에서 읽는다. 셸에 `DYAGENT_JEV_GATE=shadow`와 `TYPESAFE_API_KEY`를 둘 다 export한 채 `pnpm test`를 돌리면 기존 gate·시나리오 테스트가 실제 API를 부르고 원장에 `jev` 키가 생긴다 | 과금, deep-equality·결정성 테스트 실패 가능 | **해결 (2026-09-25):** `test/helpers/harness.ts`가 `engine.ctx.jevGate = null`을 기본값으로 둔다. shadow가 필요한 테스트는 `ctx.jevGate`를 직접 넣는다. 회귀 테스트 `harness pins jev off … (R7)`가 두 변수를 export한 상태에서도 hook이 `null`인지 확인한다. 하네스를 쓰지 않고 `new Engine`을 직접 만드는 테스트에는 이 기본값이 적용되지 않는다 |
 | Q1 | `touches_target`에 criteria를 둘지 | — | 평가 후 결정 |
 | Q2 | on 모드를 만들지, 만든다면 어떤 조건(예: LLM과 Jev가 일치할 때만)에서 쓸지 | — | shadow eval 결과로 결정 |
 
