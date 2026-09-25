@@ -63,5 +63,5 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - 한 문서의 사실을 고치면, 같은 사실을 요약한 곳(`AGENTS.md`의 규칙과 함정, `reference/README`의 치트시트, `manual/06`)도 함께 고친다.
 - `research/`의 커뮤니티 자료는 신뢰도 태그([O]/[3P]/[C]/[?])를 유지한다. [C]나 [?] 수치를 공식 사실처럼 인용하지 않는다.
 - `sources.md`의 "불일치 · 미확인 항목"(D1~D13)은 사실로 인용하지 않는다. live docs를 다시 확인할 때 이 표를 갱신한다.
-- `cases/`를 작성하려면 적용 대상 프로젝트 목록과 스택이 필요하다 (INTENT.md §8의 열린 질문). 추측해서 만들지 말고 사용자에게 확인한다.
+- `cases/`는 킷 절차 8단계가 실제 적용 결과로 만든다 (사본). 적용 대상 프로젝트는 추측해서 고르지 말고 사용자에게 확인한다. INTENT.md §8의 열린 질문은 2026-09-25에 모두 결정되었다 (Q6 합성셋 + replay, Q7 주간 점검 리포트는 구현 예정).
 - git 저장소다 (브랜치 `main`). `.remember/`는 커밋하지 않는다.

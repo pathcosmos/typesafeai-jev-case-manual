@@ -1,7 +1,7 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
 > 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> kit 0.1.9 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
+> kit 0.1.10 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
@@ -28,6 +28,8 @@ claude plugin install jev@jev-kit
 ```
 
 ## 2. 다른 프로젝트에 연결하는 법
+
+**공식 지원: Claude Code(플러그인)와 Codex(이 문서 경로).** 둘 다 end-to-end로 검증했다. 다른 에이전트는 이 문서를 읽고 따르면 동작할 수 있지만 검증하지 않았다. 킷은 사용자가 명시적으로 요청할 때만 실행한다 (자동 제안 hook 없음).
 
 사용하는 프로젝트의 `AGENTS.md`(Codex 등) 또는 `CLAUDE.md`에 아래 블록을 붙여 넣는다. KIT 경로는 각자의 클론 위치로 바꾼다.
 

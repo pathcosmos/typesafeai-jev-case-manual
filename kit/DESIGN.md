@@ -203,10 +203,10 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 
 | 항목 | 연결 방법 |
 | --- | --- |
-| Q3 hook 트리거 | 플러그인 hooks로 "새 LLM 호출 코드가 추가되면 `/jev:apply` 실행을 제안" (detect의 llm_call_sites를 재사용) |
-| Q4 에이전트 확장 | AGENTS.md 경로를 우선 유지한다. 필요하면 원격 MCP 서버(Cloudflare 옵션) |
-| Q6 평가 자동화 | measure를 확장해서 운영 로그 표본 추출과 라벨링 보조 |
-| Q7 지식 베이스 갱신 | 스케줄 에이전트가 live docs diff를 떠서 sources.md와 reference 갱신 PR을 만든다 |
+| Q3 hook 트리거 | **보류 (2026-09-25 결정: 명시적 명령만).** 다시 검토할 때: 플러그인 hooks로 "새 LLM 호출 코드가 추가되면 `/jev:apply` 실행을 제안" (detect의 llm_call_sites 재사용). 먼저 detect의 사각지대(자체 provider 계층)를 줄여야 한다 |
+| Q4 에이전트 확장 | **결정: Claude Code(플러그인) + Codex(AGENTS.md) 공식 지원**, 그 밖은 AGENTS.md best-effort. 원격 MCP 서버는 만들지 않는다 |
+| Q6 평가 자동화 | **결정: 합성셋 + replay (예정).** `kit/eval/`에 평가셋 템플릿, 합성셋 builder 골격, replay(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
+| Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트 (예정).** 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
 | 서버 (Cloudflare) | 키 프록시, 예산, 케이스 대시보드. 로컬 킷의 절차는 그대로 두고 층을 추가한다 |
 
 ## 11. 결정 사항 (2026-09-25 확정: 제안대로)
