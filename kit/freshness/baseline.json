@@ -1,0 +1,305 @@
+{
+  "tool": "jev-kit freshness",
+  "version": "0.1.0",
+  "date": "2026-09-25",
+  "pages": {
+    "https://docs.typesafe.ai/agent-skill.md": {
+      "status": 200,
+      "sha256": "5ed8f74a133760523a67674f0feaac6ac88d9f1d242574ce3c9c4965f6e037c4",
+      "where": "reference/README"
+    },
+    "https://docs.typesafe.ai/api.md": {
+      "status": 200,
+      "sha256": "7ea1c82d9d16bd06e3d38885a5292548293f91e6d1ade4682c27398ced51a9e5",
+      "where": "reference/11"
+    },
+    "https://docs.typesafe.ai/concepts/how-to-build-with-system-one.md": {
+      "status": 200,
+      "sha256": "d9f4d34c1349bf5acb55c99d6a1651eacfc481ad8d1f78ccb8776769da729a49",
+      "where": "reference/01, 02, 07"
+    },
+    "https://docs.typesafe.ai/concepts/state.md": {
+      "status": 200,
+      "sha256": "6871d59470c6af330b10be302a7382ab4c175ee8994886ad48df2fe6bb315462",
+      "where": "reference/02"
+    },
+    "https://docs.typesafe.ai/concepts/system-one.md": {
+      "status": 200,
+      "sha256": "e072211498bc1b6ed22d14aae2c2716903f4a8112e908cc45c35af65d3b84895",
+      "where": "reference/01"
+    },
+    "https://docs.typesafe.ai/concepts/use-case-map.md": {
+      "status": 200,
+      "sha256": "9d193b6379d17a3ac2f236eda9f15136e32b360e78a66bef03ce59605edfac2d",
+      "where": "patterns/domain-map"
+    },
+    "https://docs.typesafe.ai/confidence.md": {
+      "status": 200,
+      "sha256": "97dafe98b77979906a2ad456013dd85a70dcecd109d0644b096817d910997ea5",
+      "where": "reference/08"
+    },
+    "https://docs.typesafe.ai/introduction.md": {
+      "status": 200,
+      "sha256": "73eb533b5397d508e1cf606c88d5111f0e70bb8dd1d4841c45502c50d520e072",
+      "where": "reference/01"
+    },
+    "https://docs.typesafe.ai/introduction/coding-agents.md": {
+      "status": 200,
+      "sha256": "e61ec46260302e87e21ca65fe2a1d67ae6c2741a4a586645ace5dd7d9f501175",
+      "where": "reference/01"
+    },
+    "https://docs.typesafe.ai/introduction/machine-learning-primer.md": {
+      "status": 200,
+      "sha256": "45e6a22bc175f2ce1c404271dd26559179a6f6a83bde2dfcdbd963dbc1649551",
+      "where": "reference/01, 08"
+    },
+    "https://docs.typesafe.ai/introduction/quickstart.md": {
+      "status": 200,
+      "sha256": "c30183944985b269c49939140272f9eec885895df346f19d76cf9b04e18073d2",
+      "where": "reference/11, 12"
+    },
+    "https://docs.typesafe.ai/legal.md": {
+      "status": 200,
+      "sha256": "2d4a97a13e7b06b469bcd2c2fdcbf8b6c3aa0e56949eac67e8897ba5633aed7d",
+      "where": "reference/09, research/ecosystem"
+    },
+    "https://docs.typesafe.ai/llms.txt": {
+      "status": 200,
+      "sha256": "3bad966207794ce900ebc81759fd48185cd2d1f287df13a08ae4d601e96450fd",
+      "where": ""
+    },
+    "https://docs.typesafe.ai/model-jaggedness/jev-1.13.md": {
+      "status": 200,
+      "sha256": "e69329bd32e91ac08f0bd2681ceb4aacc34923b9190e29c15c8f75d8e22950e2",
+      "where": "reference/10"
+    },
+    "https://docs.typesafe.ai/models.md": {
+      "status": 200,
+      "sha256": "9d20bb3c90a0147532d0b20ddc4c64579391be7842e965543b27bad684eeb4d6",
+      "where": "reference/09"
+    },
+    "https://docs.typesafe.ai/primitives.md": {
+      "status": 200,
+      "sha256": "130d9136a2f01497e72920a6e8d96073056d86d838ca13b8a505e4adb87651f6",
+      "where": "reference/03"
+    },
+    "https://docs.typesafe.ai/primitives/advanced.md": {
+      "status": 200,
+      "sha256": "73eeedee0c3ff68e5964c914ba006e4f59522fa8222e43bd960418febd13ea7f",
+      "where": "reference/07"
+    },
+    "https://docs.typesafe.ai/primitives/choice.md": {
+      "status": 200,
+      "sha256": "4c55085131f8f2d7ae1faefdec52b1c7b379d40657d701cd2c786021cfe9dac9",
+      "where": "reference/04"
+    },
+    "https://docs.typesafe.ai/primitives/noul.md": {
+      "status": 200,
+      "sha256": "aa7bff0d04bd42614e0e851a9ad4917ccc6287c882bc5dece7689b085ef789e6",
+      "where": "reference/06"
+    },
+    "https://docs.typesafe.ai/primitives/score.md": {
+      "status": 200,
+      "sha256": "5afe0db1d2d108c3bf35f73f5fddbfcd2b9ade2d3c6f553af8a02b2bfd005ae9",
+      "where": "reference/05"
+    },
+    "https://docs.typesafe.ai/sdk.md": {
+      "status": 200,
+      "sha256": "bbd9d2eaad4c605150fcead2dcb1fdb8415a10f6e5481186e185e7e8d4826a97",
+      "where": "reference/12, 13"
+    },
+    "https://docs.typesafe.ai/sdk/javascript.md": {
+      "status": 200,
+      "sha256": "25ba04f5b55819bee85e21d9184b7b8c807a81e95754baef4b05157240a2e1bb",
+      "where": "reference/13"
+    },
+    "https://docs.typesafe.ai/sdk/javascript/api.md": {
+      "status": 200,
+      "sha256": "e8abd954c9eb20d338d07cb3397bd933f3fe5633237b9ff7bd73c6dd290e51c8",
+      "where": "reference/13"
+    },
+    "https://docs.typesafe.ai/sdk/javascript/changelog.md": {
+      "status": 200,
+      "sha256": "73389d4c01993603a0c943aa04d491ef92670a358e413e74a5aac4891661250d",
+      "where": "reference/13"
+    },
+    "https://docs.typesafe.ai/sdk/python.md": {
+      "status": 200,
+      "sha256": "40d5c6a5fb9b6a8f68ec9f14343837bc0ea5a7fe09a3bfb9a07f52418e41f1a3",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/clients/async.md": {
+      "status": 200,
+      "sha256": "f45f04e87431ce9e21cdb90e074066a23ab962b3c870d316f9092682923d7fa2",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/clients/sync.md": {
+      "status": 200,
+      "sha256": "55a144c0161e9b22dc3cf1b2134f9c64ae28348ead2ef4a269e39fbe4757d8f6",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/constants.md": {
+      "status": 200,
+      "sha256": "dfcd6bfd691412058b2ea06c9a44414f5126e4aea06d7bf7071600f42a9b5003",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/exceptions.md": {
+      "status": 200,
+      "sha256": "c1cec8b4f1e4c8d258f18a40acf8736e34be3c6b0bd0915189d2542624447fad",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/retries.md": {
+      "status": 200,
+      "sha256": "bdf94b25ae1d23a0784c9e1affcf0363e80deb56089a0e48d3e3860bb5181cc9",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/types/questions.md": {
+      "status": 200,
+      "sha256": "cbad949affff140bc00a090b37748c52f1239ec0e98f308012eceb562fdaaa0a",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/api/types/responses.md": {
+      "status": 200,
+      "sha256": "7b0167d010dc165b6584939a550c8ec35d31c003f0e8095638a46a037b6f6f8a",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/changelog.md": {
+      "status": 200,
+      "sha256": "47c90969dd76a83271c82650e0f4cfcea86db8ca0d9820ee8334eecc388162c5",
+      "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/sdk/python/usage.md": {
+      "status": 200,
+      "sha256": "9a7d1d4e52face5ccc889418b1b67c2442d41e64951b8ae480169d6542f222f4",
+      "where": "reference/12"
+    },
+    "https://raw.githubusercontent.com/typesafe-ai/skills/main/skills/typesafe-ai/SKILL.md": {
+      "status": 200,
+      "sha256": "71ea90d7906c6554c4f4c460ef7361b2d26f59116ccdae986dc6d997b9389f52",
+      "where": "CLAUDE.md"
+    }
+  },
+  "llms_urls": [
+    "https://docs.typesafe.ai/agent-skill.md",
+    "https://docs.typesafe.ai/api.md",
+    "https://docs.typesafe.ai/concepts/how-to-build-with-system-one.md",
+    "https://docs.typesafe.ai/concepts/state.md",
+    "https://docs.typesafe.ai/concepts/system-one.md",
+    "https://docs.typesafe.ai/concepts/use-case-map.md",
+    "https://docs.typesafe.ai/confidence.md",
+    "https://docs.typesafe.ai/cookbooks.md",
+    "https://docs.typesafe.ai/cookbooks/autoformat.md",
+    "https://docs.typesafe.ai/cookbooks/autoresearch_feature_discovery.md",
+    "https://docs.typesafe.ai/cookbooks/citation_check.md",
+    "https://docs.typesafe.ai/cookbooks/classification_using_confidence.md",
+    "https://docs.typesafe.ai/cookbooks/classifying_rag_passages.md",
+    "https://docs.typesafe.ai/cookbooks/consistency_choice_cookbook.md",
+    "https://docs.typesafe.ai/cookbooks/consistency_noul_cookbook.md",
+    "https://docs.typesafe.ai/cookbooks/date_extraction_cookbook.md",
+    "https://docs.typesafe.ai/cookbooks/entity_alignment.md",
+    "https://docs.typesafe.ai/cookbooks/function_calling.md",
+    "https://docs.typesafe.ai/cookbooks/hierarchical_classification.md",
+    "https://docs.typesafe.ai/cookbooks/llm_guardrails.md",
+    "https://docs.typesafe.ai/cookbooks/parallel_questions.md",
+    "https://docs.typesafe.ai/cookbooks/pre_parsed_value_extraction_cookbook.md",
+    "https://docs.typesafe.ai/cookbooks/rerank_typesafe.md",
+    "https://docs.typesafe.ai/cookbooks/sde_cascade.md",
+    "https://docs.typesafe.ai/cookbooks/semantic_find.md",
+    "https://docs.typesafe.ai/cookbooks/skill_suggestion.md",
+    "https://docs.typesafe.ai/demos.md",
+    "https://docs.typesafe.ai/demos/smart-home.md",
+    "https://docs.typesafe.ai/introduction.md",
+    "https://docs.typesafe.ai/introduction/coding-agents.md",
+    "https://docs.typesafe.ai/introduction/machine-learning-primer.md",
+    "https://docs.typesafe.ai/introduction/quickstart.md",
+    "https://docs.typesafe.ai/legal.md",
+    "https://docs.typesafe.ai/model-jaggedness/jev-1.13.md",
+    "https://docs.typesafe.ai/models.md",
+    "https://docs.typesafe.ai/patterns.md",
+    "https://docs.typesafe.ai/patterns/composite-scoring.md",
+    "https://docs.typesafe.ai/patterns/confidence-routing.md",
+    "https://docs.typesafe.ai/patterns/fan-out.md",
+    "https://docs.typesafe.ai/patterns/intent-routing.md",
+    "https://docs.typesafe.ai/primitives.md",
+    "https://docs.typesafe.ai/primitives/advanced.md",
+    "https://docs.typesafe.ai/primitives/choice.md",
+    "https://docs.typesafe.ai/primitives/noul.md",
+    "https://docs.typesafe.ai/primitives/score.md",
+    "https://docs.typesafe.ai/sdk.md",
+    "https://docs.typesafe.ai/sdk/javascript.md",
+    "https://docs.typesafe.ai/sdk/javascript/api.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/APIConnectionError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/APIError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/APIPromise.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/APITimeoutError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/APIUserAbortError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/AuthenticationError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/BadRequestError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/InternalServerError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/NotFoundError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/PermissionDeniedError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/RateLimitError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/TypeSafeClient.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/TypeSafeError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/classes/UnprocessableEntityError.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/functions/choice.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/functions/noul.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/functions/score.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/ChoiceQuestion.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/ChoiceResponse.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/Logger.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/ModelCard.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/Models.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/NoulQuestion.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/NoulResponse.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/Questions.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/RequestOptions.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/RetryPolicy.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/ScoreQuestion.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/ScoreResponse.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/SystemOneRequest.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/SystemOneRequestPayload.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/SystemOneResult.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/TypeSafeClientConfig.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/Usage.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/interfaces/WithResponse.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/ChoiceCriteria.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/Description.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/EntryType.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/EnvVar.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/Fetch.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/JsonValue.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/LogLevel.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/Question.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/ResultFor.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/ScoreCriteria.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/ScoreLegend.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/type-aliases/ScoreOf.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/variables/ENV.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/variables/LOG_LEVELS.md",
+    "https://docs.typesafe.ai/sdk/javascript/api/variables/VERSION.md",
+    "https://docs.typesafe.ai/sdk/javascript/changelog.md",
+    "https://docs.typesafe.ai/sdk/python.md",
+    "https://docs.typesafe.ai/sdk/python/api.md",
+    "https://docs.typesafe.ai/sdk/python/api/clients/async.md",
+    "https://docs.typesafe.ai/sdk/python/api/clients/sync.md",
+    "https://docs.typesafe.ai/sdk/python/api/constants.md",
+    "https://docs.typesafe.ai/sdk/python/api/exceptions.md",
+    "https://docs.typesafe.ai/sdk/python/api/retries.md",
+    "https://docs.typesafe.ai/sdk/python/api/types/common.md",
+    "https://docs.typesafe.ai/sdk/python/api/types/questions.md",
+    "https://docs.typesafe.ai/sdk/python/api/types/responses.md",
+    "https://docs.typesafe.ai/sdk/python/changelog.md",
+    "https://docs.typesafe.ai/sdk/python/usage.md"
+  ],
+  "model_ids": [
+    "jev-1.13",
+    "jev-1.13.0",
+    "jev-latest",
+    "jev-preview"
+  ],
+  "sdk": {
+    "python:typesafe-sdk": "0.7.1",
+    "js:@typesafe-ai/sdk": "0.6.0"
+  }
+}

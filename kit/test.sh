@@ -8,6 +8,8 @@ echo "== measure (mock API)"
 python3 -m unittest kit/measure/test_measure.py
 echo "== eval (build, replay)"
 python3 -m unittest kit/eval/test_build.py kit/eval/test_replay.py
+echo "== freshness (오프라인)"
+python3 -m unittest kit/freshness/test_check_docs.py
 echo "== check"
 python3 -m unittest kit/check/test_check.py
 bash kit/scaffolds/verify.sh "${1:-all}"
