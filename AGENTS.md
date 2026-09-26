@@ -1,7 +1,7 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
 > 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
-> kit 0.1.24 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
+> kit 0.1.26 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
 
@@ -105,7 +105,15 @@ KIT=/Users/lanco/taketimes/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 
   curl -sL https://docs.typesafe.ai/llms.txt
   ```
   (모든 페이지는 경로 뒤에 `.md`를 붙이면 Markdown으로 받을 수 있다)
-- 공식 agent skill: Claude Code에서 `/typesafe:typesafe-ai`. 설치된 skill의 migration 링크는 404다 (D4).
+- **문서 MCP**가 있으면 curl보다 먼저 쓴다. 검색 결과는 발췌이므로 원문 `.mdx`를 읽고 판단한다. shell 네트워크가 막힌 Codex 샌드박스에서도 동작한다. 등록 방법:
+  ```bash
+  claude mcp add --scope user --transport http typesafe-docs https://docs.typesafe.ai/mcp
+  ```
+  ```bash
+  codex mcp add typesafe-docs --url https://docs.typesafe.ai/mcp
+  ```
+  도구는 `search_type_safe_ai`, `query_docs_filesystem_type_safe_ai`, `submit_feedback`이다. `submit_feedback`은 외부로 전송하므로 사용자 승인 없이 쓰지 않는다. 문서에 없는 엔드포인트다 ([research/ecosystem.md](research/ecosystem.md) §3).
+- 공식 agent skill: Claude Code에서는 `/typesafe:typesafe-ai`, Codex에서는 `npx skills add typesafe-ai/skills --skill typesafe-ai -g -a codex`로 설치한다. 설치된 skill의 migration 링크는 404다 (D4).
 - `research/`의 자료에는 신뢰도 태그가 붙어 있다: [O] 공식, [3P] 파트너나 언론, [C] 커뮤니티, [?] 검증하지 못함. [C]와 [?] 수치는 결정 근거로 쓰지 않는다.
 - 새 Jev 버전이나 SDK 릴리스가 보이면 [reference/09](reference/09-models-limits.md), [reference/10](reference/10-jaggedness.md), [reference/12](reference/12-sdk-python.md), [reference/13](reference/13-sdk-javascript.md), [sources.md](sources.md) 순서로 갱신이 필요하다.
 

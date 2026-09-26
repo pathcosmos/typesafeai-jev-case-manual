@@ -31,7 +31,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   ```bash
   curl -sL https://docs.typesafe.ai/primitives/choice.md
   ```
-- `typesafe:typesafe-ai` skill이 설치되어 있다. Jev 관련 설계 작업을 하기 전에 이 skill을 로드한다.
+- 문서 MCP `typesafe-docs`(`https://docs.typesafe.ai/mcp`)가 Claude Code(user 범위)와 Codex에 등록되어 있다. 검색은 `search_type_safe_ai`, 원문은 `query_docs_filesystem_type_safe_ai`로 `.mdx`를 읽는다. 검색 발췌만으로 사실을 적지 않는다. `submit_feedback`(문서팀에 전송)은 사용자 승인 후에만 쓴다. 이 세션에 MCP 도구가 없으면 위의 curl을 쓴다.
+- `typesafe:typesafe-ai` skill이 설치되어 있다 (Codex: `~/.agents/skills/typesafe-ai`). Jev 관련 설계 작업을 하기 전에 이 skill을 로드한다.
 - 문서에 나오는 버전 관련 세부사항(모델 ID, SDK 시그니처, 한도, 가격)은 **반드시 live docs나 changelog로 확인한 것만** 적는다. 확인할 수 없으면 "미확인"이라고 표시한다.
 
 ## 작성 규칙

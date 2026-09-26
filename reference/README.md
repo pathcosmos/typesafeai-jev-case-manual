@@ -68,5 +68,7 @@ TypeSafe Jev의 기능 레퍼런스다. 공식문서를 요약하고 판단 기�
 
 - Claude Code에서는 `claude plugin marketplace add typesafe-ai/skills` 후 `claude plugin install typesafe@typesafe-ai`로 설치한다. 호출은 `/typesafe:typesafe-ai`.
 - 업데이트는 `claude plugin marketplace update typesafe-ai` 후 `claude plugin update typesafe@typesafe-ai`.
+- Codex에서는 `npx skills add typesafe-ai/skills --skill typesafe-ai -g -a codex`로 설치한다 (`~/.agents/skills/typesafe-ai`, GitHub main과 같은 본문).
+- 문서 조회는 문서 MCP `https://docs.typesafe.ai/mcp`(검색 + 원문 `.mdx` 읽기)를 쓸 수 있다. 문서에 없는 엔드포인트이며, 등록 방법과 주의점은 [AGENTS.md](../AGENTS.md)의 freshness 절과 [ecosystem](../research/ecosystem.md) §3에 있다.
 - 공식 경고: **오래된 skill은 에이전트가 요청이나 응답 필드를 지어내는 원인이 된다.** 설치된 0.5.7은 404인 migration 페이지를 링크하고 있다 (sources D4).
 - 공식 권장 ([agent-skill](https://docs.typesafe.ai/agent-skill.md)): 질문과 임계값 상수는 **한 파일에 모아서** 사람이 리뷰하기 쉽게 한다. 에이전트는 질문을 잘 못 쓰므로 함께 다듬을 것을 전제로 한다.

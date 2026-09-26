@@ -4,8 +4,9 @@
 
 - 기준 모델: `jev-1.13.0` (`jev-latest`와 `jev-preview`가 모두 이 모델을 가리킴)
 - 기준 SDK: Python `typesafe-sdk` **0.7.1** (2026-09-21), JavaScript `@typesafe-ai/sdk` **0.6.0** (2026-09-15)
-- 설치된 에이전트 skill: `typesafe@typesafe-ai` **0.5.7**
+- 설치된 에이전트 skill: Claude Code `typesafe@typesafe-ai` **0.5.7**, Codex `~/.agents/skills/typesafe-ai` (2026-09-27 설치, GitHub main과 동일)
 - 모든 페이지는 경로 뒤에 `.md`를 붙이면 Markdown으로 받을 수 있다. 목차는 https://docs.typesafe.ai/llms.txt
+- 문서 MCP: `docs.typesafe.ai/mcp` (검색과 페이지 읽기. 아래 "에이전트 도구"와 [research/ecosystem.md](research/ecosystem.md) §3)
 
 읽음 상태:
 - ✅ 정독: 레퍼런스에 반영함
@@ -72,7 +73,9 @@
 | 페이지 | URL | 확인일 | 상태 | 반영 위치 |
 | --- | --- | --- | --- | --- |
 | Agent skill | https://docs.typesafe.ai/agent-skill.md | 2026-09-24 | ✅ | reference/README |
-| SKILL.md (GitHub main) | https://raw.githubusercontent.com/typesafe-ai/skills/main/skills/typesafe-ai/SKILL.md | 2026-09-24 | ✅ 본문이 로컬 0.5.7 설치본과 동일함 | CLAUDE.md |
+| SKILL.md (GitHub main) | https://raw.githubusercontent.com/typesafe-ai/skills/main/skills/typesafe-ai/SKILL.md | 2026-09-27 | ✅ 본문이 Claude Code 0.5.7 설치본, Codex 설치본과 동일함 | CLAUDE.md |
+| Mintlify 생성 skill (문서 MCP 리소스 `mintlify://skills/typesafe`와 같음) | https://docs.typesafe.ai/skill.md | 2026-09-27 | 🔍 GitHub 공식 skill과 다른 문서. 엔드포인트, env 변수, 컨텍스트 한도, 429/529 재시도만 KB와 대조했고 충돌은 없었다 (나머지는 대조하지 않음) | research/ecosystem |
+| 문서 MCP 서버 | `docs.typesafe.ai/mcp` (POST 전용이라 freshness 추적 대상 아님) | 2026-09-27 | ✅ 도구 3개와 리소스 1개 확인. docs 본문에는 언급 없음 | research/ecosystem, AGENTS.md, kit/procedure |
 
 ## Patterns · Cookbooks · Demos · Use-case map
 

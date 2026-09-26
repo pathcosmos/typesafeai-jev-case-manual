@@ -1,7 +1,7 @@
 {
   "tool": "jev-kit freshness",
   "version": "0.1.0",
-  "date": "2026-09-25",
+  "date": "2026-09-27",
   "pages": {
     "https://docs.typesafe.ai/agent-skill.md": {
       "status": 200,
@@ -172,6 +172,11 @@
       "status": 200,
       "sha256": "9a7d1d4e52face5ccc889418b1b67c2442d41e64951b8ae480169d6542f222f4",
       "where": "reference/12"
+    },
+    "https://docs.typesafe.ai/skill.md": {
+      "status": 200,
+      "sha256": "216bad052b5218c51b0f12dd70ff0c0f7b77c856ad76fab927e20b2caa2d4f0e",
+      "where": "research/ecosystem"
     },
     "https://raw.githubusercontent.com/typesafe-ai/skills/main/skills/typesafe-ai/SKILL.md": {
       "status": 200,
