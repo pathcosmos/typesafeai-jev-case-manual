@@ -207,7 +207,7 @@ python3 measure.py --questions <spec.json> --samples <samples.jsonl> --budget-re
 | 항목 | 연결 방법 |
 | --- | --- |
 | Q3 hook 트리거 | **보류 (2026-09-25 결정: 명시적 명령만).** 다시 검토할 때: 플러그인 hooks로 "새 LLM 호출 코드가 추가되면 `/jev:apply` 실행을 제안" (detect의 llm_call_sites 재사용). 먼저 detect의 사각지대(자체 provider 계층)를 줄여야 한다 |
-| Q4 에이전트 확장 | **결정: Claude Code(플러그인) + Codex(AGENTS.md) 공식 지원**, 그 밖은 AGENTS.md best-effort. 원격 MCP 서버는 만들지 않는다 |
+| Q4 에이전트 확장 | **결정: Claude Code(플러그인) + Codex(AGENTS.md) 공식 지원**, 그 밖은 AGENTS.md best-effort. 원격 MCP 서버는 만들지 않는다. **kit 0.1.26: TypeSafe가 호스팅하는 문서 MCP(`docs.typesafe.ai/mcp`)를 쓰는 것은 별개다.** procedure와 AGENTS.md는 live docs 조회에 이 MCP를 먼저 쓰고, 없으면 curl을 쓴다. 설치기는 등록하지 않는다 (README에 명령만 적음) |
 | Q6 평가 자동화 | **결정: 합성셋 + replay. 완료 (kit 0.1.12)**: `templates/evalset.md`(템플릿), `kit/eval/build.py`(builder), `kit/eval/replay.py`, 예시 `kit/eval/examples/triage`. replay 정의(measure `per_sample` 답에 결정 정책을 적용해 gold와 비교: 결정 오류율, 잘못된 no, coverage, 언어별 슬라이스, en/ko 쌍 불일치). 운영 로그 추출은 범위 밖 |
 | Q7 지식 베이스 갱신 | **결정: 주간 점검 리포트. 완료 (kit 0.1.13)**: `kit/freshness/check_docs.py`, 기준선 `baseline.json`(2026-09-25), GitHub Actions `jev-freshness`(매주 월 09:00 KST, 변화 시 이슈. Cloudflare 등 별도 인프라 불필요). 스케줄 작업이 `llms.txt`, changelog, 모델 ID, SDK 최신 버전을 `sources.md`에 기록된 값과 비교해서 바뀐 것만 리포트한다. 수정은 사람이 승인한 뒤에 한다 (자동 PR 없음) |
 | 에이전트 선택지 점수 hook | **완료 (kit 0.1.18)**: `kit/options/jev_options.py`. Stop hook이 응답의 번호 목록 선택지를 찾아 선택지별 요청 부합(Choice)·범위 안·되돌림 가능(Noul)을 한 줄로 표시. 가짜 모드와 실제 Jev 모드(`JEV_OPTIONS=jev`, 키 필요). CLI·데스크톱에서 표시 확인, 대화상자 설명 수정은 화면 미반영. 플러그인에 자동 등록하지 않음(Q3). 근거: `research/agent-choice-scoring.md`. 남은 것: 평가셋 |

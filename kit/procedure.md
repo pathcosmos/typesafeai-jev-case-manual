@@ -1,7 +1,7 @@
 # Jev 적용 절차 (kit procedure)
 
 > 이 문서는 **에이전트가 실행하는 절차**다. 에이전트 중립이며 Claude Code의 `/jev:apply`와 `AGENTS.md` 경로가 모두 이 문서를 따른다.
-> 버전: kit 0.1.24 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
+> 버전: kit 0.1.26 · 기준 모델 `jev-1.13.0` · 설계 근거: [DESIGN.md](DESIGN.md)
 
 ## 용어
 
@@ -17,6 +17,7 @@
 3. **API 키 값을 읽거나 출력하거나 저장하지 않는다.** 환경변수 `TYPESAFE_API_KEY`가 있는지만 확인한다.
 4. **승인 없이 운영 데이터나 PII를 외부 API로 보내지 않는다.** 측정 표본은 합성 데이터나 사용자가 승인한 데이터만 쓴다.
 5. **판단 근거는 KIT의 지식 베이스다.** 규칙을 기억에 의존하지 말고 각 단계에 적힌 문서를 읽는다. 확인되지 않은 사실(`KIT/sources.md`의 D1~D13, `KIT/research/`의 [C]/[?])을 근거로 쓰지 않는다.
+   - KIT에 없거나 버전에 민감한 사실(최신 SDK와 changelog, 한도, 필드)은 live docs로 확인한다. **문서 MCP `typesafe-docs`가 있으면 먼저 쓴다**: `search_type_safe_ai`로 찾고, `query_docs_filesystem_type_safe_ai`로 원문(`head -200 /<path>.mdx`)을 읽는다. 검색 결과의 발췌만 보고 판단하지 않는다. MCP가 없으면 `curl -sL https://docs.typesafe.ai/<path>.md`를 쓴다. Codex 샌드박스처럼 shell 네트워크가 막힌 환경에서도 MCP는 동작한다. `submit_feedback` 도구는 외부로 전송하므로 사용자 승인 없이 쓰지 않는다.
 6. **확신이 없으면 적용하지 않는다.** 보류하고 사유를 보고한다. 채택 0건도 정상적인 결과다.
 7. 사용자가 멈추라고 하면 즉시 멈추고, 지금 상태와 되돌리는 방법(브랜치 삭제)을 알려 준다.
 8. 각 단계가 끝나면 `RUN/state.json`의 `steps.<n>`에 `{status: done|skipped|stopped, reason, outputs}`를 기록한다.

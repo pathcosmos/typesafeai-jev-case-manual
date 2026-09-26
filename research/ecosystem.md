@@ -60,7 +60,8 @@
 | **eve** (Vercel KB) | tool call 자동 승인: `clear`/`caution` Choice, 실패하면 사람 승인으로 넘어가는 **fail-closed** 설계. 헬퍼가 argmax만 쓴다 (임계값 없음) | [가이드](https://vercel.com/kb/guide/auto-approve-tool-calls-eve-jev) |
 | **LangChain** `langchain-typesafe` | `TypeSafeClassifier`(Runnable). 실험적 `ModelRouterMiddleware`(복잡도에 따라 모델 선택)와 `AutoModeMiddleware`(위험한 tool call 차단). risk middleware는 거부만 한다 (사람 승인 없음) | [docs](https://docs.langchain.com/oss/python/integrations/providers/typesafe) · [블로그: Building a Harness with Jev](https://www.langchain.com/blog/building-a-harness-with-jev) |
 | **Pydantic AI** `pydantic-ai-slim[typesafe]` | `TypeSafeModel('jev-latest')`. **판단 대상 자료는 prompt에, 질문은 output 타입의 필드(설명, docstring)에** 둔다. 타입 매핑: `bool`은 Noul, `Literal`/`Enum`은 Choice, `IntEnum`은 Score. `str`이나 datetime을 쓰면 `UserError`가 난다. 스트리밍은 없다 | [docs](https://pydantic.dev/docs/ai/models/typesafe/) |
-| MCP 서버 | **공식 MCP는 없다.** 커뮤니티 구현은 다수 검색되지만 검증하지 않았다 | [?] |
+| 문서 MCP 서버 `https://docs.typesafe.ai/mcp` | **2026-09-27 정정**: 문서 사이트(Mintlify)가 호스팅하는 **읽기 전용 문서 MCP**가 동작한다 (streamable HTTP, 인증 없음). 도구는 `search_type_safe_ai`(검색), `query_docs_filesystem_type_safe_ai`(문서 페이지만 든 가상 파일시스템에 `head`/`cat`/`grep`, 경로는 `.mdx`), `submit_feedback`(문서팀에 오류 보고, 외부 전송)이다. 리소스 `mintlify://skills/typesafe`는 GET `https://docs.typesafe.ai/skill.md`와 같은 Mintlify 생성 skill이다 (GitHub 공식 skill과 다른 문서). **docs 본문(`llms-full.txt`)에는 언급이 없다.** Jev를 호출하는 MCP가 아니라 문서 조회용이다. Codex `workspace-write` 샌드박스(네트워크 차단)에서도 MCP로 문서를 읽을 수 있음을 직접 확인했다 (shell `curl`은 DNS 실패) | 직접 확인 (TypeSafe 도메인이지만 문서에 없음. [O]로 인용하지 않는다) |
+| Jev 호출용 MCP 서버 | 공식 구현은 없다. 커뮤니티 구현은 다수 검색되지만 검증하지 않았다 | [?] |
 | LlamaIndex, DSPy, LiteLLM, BAML 등 | 검색 결과에만 나온다 | [?] |
 
 ## 4. 한국어 · 다국어 증거

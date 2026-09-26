@@ -102,6 +102,8 @@ Codex CLI의 `/hooks`에서 `jev@jev-kit` hook을 **신뢰**해야 hook이 실�
 
 `AGENTS.md` → `reference/` → `patterns/` → `manual/` → `cases/`. 플러그인을 쓰지 않는 에이전트는 대상 프로젝트의 `AGENTS.md`/`CLAUDE.md`에 킷 경로를 안내하는 블록을 넣는다 ([AGENTS.md §2](AGENTS.md)).
 
+킷의 지식 베이스에 없는 최신 사실은 TypeSafe 공식 문서에서 확인한다. 연결 방법은 [§3](#3-typesafe-공식-문서-연결-문서-mcp와-공식-skill)을 본다.
+
 ### 선택지 점검 hook (선택)
 
 에이전트가 사용자에게 선택지를 제시할 때, 각 선택지가 요청에 얼마나 부합하는지 Jev 점수로 보여 주는 보조 기능이다. 모드가 `off`(기본)면 아무것도 하지 않는다. 설정은 `~/.config/jev/env` 한 곳이다.
@@ -114,7 +116,148 @@ Codex CLI의 `/hooks`에서 `jev@jev-kit` hook을 **신뢰**해야 hook이 실�
 
 동작과 점수의 뜻은 [kit/options/README](kit/options/README.md)를 본다. 점수는 요청에 대한 부합이지 기술적 최선의 판정이 아니다.
 
-## 3. 갱신
+## 3. TypeSafe 공식 문서 연결: 문서 MCP와 공식 skill
+
+킷의 지식 베이스는 확인일 시점의 요약이다. 그 뒤에 바뀐 사실이나 킷이 다루지 않는 세부(SDK 시그니처와 기본값, 예외 클래스, 쿡북 코드)는 TypeSafe 공식 문서에서 확인한다. 에이전트가 공식 자료를 읽는 경로는 아래 세 가지다.
+
+| 경로 | 내용 | 쓰는 때 |
+| --- | --- | --- |
+| 킷 지식 베이스 (`reference/`, `patterns/`, `manual/`, `research/`) | 검증한 요약, 결정 기준, 현장 gotcha, 평가 규칙 | 설계와 적용 판단의 기본 근거 |
+| 공식 skill `typesafe-ai` | TypeSafe가 배포하는 설계 원칙과 API 요약 | 에이전트가 Jev 코드를 쓸 때 (자동 로드) |
+| 문서 MCP `typesafe-docs` | docs.typesafe.ai 전체(2026-09-27 기준 111페이지)의 검색과 원문 읽기 | 버전에 민감한 사실, 킷에 없는 세부 |
+
+**설치기(`install.sh`)는 이 둘을 등록하지 않는다.** 기기마다 한 번 직접 등록한다. API 키는 필요 없다 (공개 문서만 읽는다).
+
+### 3.1 설치
+
+**Claude Code: 문서 MCP**
+
+```bash
+claude mcp add --scope user --transport http typesafe-docs https://docs.typesafe.ai/mcp
+```
+
+`--scope user`로 등록하면 모든 프로젝트에서 쓸 수 있다. 빼면 기본값 `local`이라 현재 프로젝트에서만 쓸 수 있다.
+
+**Claude Code: 공식 skill**
+
+```bash
+claude plugin marketplace add typesafe-ai/skills
+```
+
+```bash
+claude plugin install typesafe@typesafe-ai
+```
+
+**Codex: 문서 MCP**
+
+```bash
+codex mcp add typesafe-docs --url https://docs.typesafe.ai/mcp
+```
+
+**Codex: 공식 skill**
+
+```bash
+npx skills add typesafe-ai/skills --skill typesafe-ai -g -a codex
+```
+
+`-g`는 사용자 전역(`~/.agents/skills/typesafe-ai`)에 설치한다. 이 디렉터리는 Codex 외에 Cursor, Gemini CLI 같은 에이전트도 읽는다. `-a codex`는 Codex에 연결한다. 옵션을 빼면 프로젝트 로컬에 설치하고 연결할 에이전트를 묻는다.
+
+설치한 뒤에는 **에이전트를 다시 시작해야** 도구와 skill이 로드된다.
+
+### 3.2 설치 확인
+
+| 확인 | 명령 | 기대 결과 |
+| --- | --- | --- |
+| Claude Code MCP | `claude mcp get typesafe-docs` | `Status: ✔ Connected` |
+| Claude Code MCP (세션 안) | `/mcp` | `typesafe-docs`가 connected |
+| Claude Code skill | `claude plugin list` | `typesafe@typesafe-ai`, `Status: ✔ enabled` |
+| Codex MCP | `codex mcp get typesafe-docs` | `enabled: true`, `transport: streamable_http` |
+| Codex skill | `npx skills list -g` | `typesafe-ai`, Agents에 `Codex` 포함 |
+
+### 3.3 사용
+
+에이전트는 TypeSafe에 관한 작업에서 MCP 도구를 **부를 수 있다.** 다만 부를지는 모델이 정하므로 항상 부른다는 보장은 없다. 확실히 쓰게 하려면 아래 예시처럼 도구 이름을 넣어 요청한다. 킷 절차([kit/procedure.md](kit/procedure.md)의 절대 규칙 5)는 다음 순서로 조회하게 되어 있다.
+
+1. `search_type_safe_ai`로 관련 페이지를 찾는다.
+2. `query_docs_filesystem_type_safe_ai`로 그 페이지의 원문을 읽는다. 검색 결과는 발췌이므로 발췌만 보고 판단하지 않는다.
+3. MCP가 없으면 `curl -sL https://docs.typesafe.ai/<경로>.md`로 읽는다.
+
+| 도구 | 하는 일 | 입력 예시 |
+| --- | --- | --- |
+| `search_type_safe_ai` | 문서 전체 의미 검색. 제목, 링크, 발췌를 돌려준다 | `RetryPolicy retryable statuses backoff` |
+| `query_docs_filesystem_type_safe_ai` | 문서 페이지만 든 가상 파일시스템에서 읽기 전용 명령을 실행한다. `rg`, `grep`, `find`, `tree`, `ls`, `cat`, `head`, `sed`, `jq` 등을 쓸 수 있다. 사용자 기기에서는 아무것도 실행되지 않는다 | `head -200 /sdk/python/api/retries.mdx` |
+| `submit_feedback` | 문서 오류를 TypeSafe 문서팀에 보고한다. **외부로 전송된다** | (사용자 확인 후에만) |
+
+검색 결과의 `Page: sdk/python/api/retries`는 파일시스템 경로 `/sdk/python/api/retries.mdx`에 해당한다. 파일시스템 명령은 호출마다 상태가 초기화된다. 여러 명령은 `&&`로 이어서 한 번에 보낸다.
+
+```text
+tree / -L 2                              # 문서 구조 보기
+rg -il "529" /                           # 키워드가 나오는 페이지 찾기
+rg -n "respect_retry_after" /sdk         # SDK 문서에서 정확히 찾기
+head -150 /primitives/noul.mdx           # 원문 읽기
+```
+
+에이전트에게 직접 시킬 때는 다음처럼 요청한다.
+
+```text
+typesafe-docs MCP로 Python SDK RetryPolicy의 기본값을 찾아 줘. 발췌 말고 원문 페이지를 읽고, 페이지 경로도 알려 줘.
+```
+
+```text
+TypeSafe 문서 전체에서 model="jev"처럼 Models 페이지에 없는 모델 이름이 쓰인 곳을 rg로 찾아 줘.
+```
+
+### 3.4 활용 방법
+
+| 상황 | 활용 |
+| --- | --- |
+| `/jev:apply` 중 SDK 최신 버전이 킷의 검증 버전보다 새롭다 | 에이전트가 MCP로 `/sdk/python/changelog.mdx`나 `/sdk/javascript/changelog.mdx`를 읽고 breaking change를 확인한다 (절차 5단계) |
+| **Codex 샌드박스**(`workspace-write`, 네트워크 차단)에서 문서를 봐야 한다 | shell `curl`은 `Could not resolve host`로 실패하지만 MCP는 동작한다. MCP 호출은 shell 샌드박스를 거치지 않기 때문이다. 문서 조회만을 위해 `network_access`를 켤 필요가 없다. SDK 설치와 실제 Jev 호출에는 여전히 네트워크 권한이 필요하다 |
+| 정확한 시그니처, 기본값, 예외 클래스가 필요하다 | `rg -n "max_retries" /sdk`, `head -200 /sdk/python/api/exceptions.mdx`. JS SDK의 인터페이스별 페이지(`/sdk/javascript/api/...`)도 들어 있다 |
+| 비슷한 문제를 푼 쿡북 코드를 찾는다 | `search_type_safe_ai`에 문제를 서술한다 (예: `rerank retrieved passages`). 결과의 쿡북 원문을 `/cookbooks/<이름>.mdx`로 읽는다. 쿡북 수치는 "공식 예시 결과"로만 인용한다 |
+| 문서끼리 어긋나는 곳을 찾는다 | 전문 검색이 한 번에 된다. 예: `rg -n 'model="jev(-1\.13)?"' /`는 `sources.md` D1(Models 페이지에 없는 모델 이름)의 두 위치를 바로 찾는다 |
+| 킷 유지보수: 주간 freshness 리포트에 바뀐 페이지가 있다 | 리포트의 페이지를 MCP로 읽고 지식 베이스를 고친다. 그다음 `sources.md` 확인일을 갱신하고 `--update-baseline`을 실행한다 ([kit/freshness/README](kit/freshness/README.md)) |
+| 문서 오류를 발견했다 | `submit_feedback`으로 보고할 수 있다. 외부 전송이므로 **보낼 내용을 사용자가 확인한 뒤에만** 보낸다 |
+
+### 3.5 주의점
+
+- **문서 MCP는 TypeSafe 문서에 소개되지 않은 엔드포인트다.** 문서 사이트(Mintlify)가 자동으로 제공한다. 예고 없이 바뀌거나 사라질 수 있으므로 curl을 대체 경로로 둔다. 근거와 확인일은 [research/ecosystem.md](research/ecosystem.md) §3과 [sources.md](sources.md)에 있다.
+- **검색 결과는 청크 발췌다.** 모델 ID, 한도, 가격, SDK 시그니처처럼 버전에 민감한 사실은 원문 페이지나 changelog로 확인한 것만 적는다.
+- 공개 문서만 읽는다. Jev를 호출하지 않고, 계정이나 API 키에 접근하지 않는다.
+- MCP 리소스 `mintlify://skills/typesafe`(`https://docs.typesafe.ai/skill.md`와 같은 내용)는 Mintlify가 자동으로 만든 skill이다. **GitHub의 공식 skill `typesafe-ai`와 다른 문서다.**
+- 공식 skill이 링크하는 migration 페이지는 404다 (`sources.md` D4). 오래된 통합을 갱신할 때는 SDK changelog를 기준으로 한다.
+
+### 3.6 갱신
+
+| 대상 | 방법 |
+| --- | --- |
+| 문서 MCP | 갱신할 것이 없다 (서버가 항상 최신 문서를 제공한다) |
+| Claude Code 공식 skill | `claude plugin marketplace update typesafe-ai` 후 `claude plugin update typesafe@typesafe-ai` |
+| Codex 공식 skill | `npx skills update typesafe-ai -g -y` |
+
+### 3.7 제거
+
+`install.sh uninstall --purge`는 아래 항목을 지우지 않는다. 따로 제거한다.
+
+```bash
+claude mcp remove typesafe-docs -s user
+```
+
+```bash
+codex mcp remove typesafe-docs
+```
+
+```bash
+npx skills remove typesafe-ai -g -y
+```
+
+```bash
+claude plugin uninstall typesafe@typesafe-ai
+```
+
+`npx skills remove`에 `-a`를 주지 않으면 모든 에이전트의 연결을 함께 정리한다. 문서 MCP만 지우면 킷 절차는 자동으로 curl을 쓴다.
+
+## 4. 갱신
 
 같은 설치 명령을 다시 실행하면 킷을 `git pull --ff-only`로 받고 플러그인을 갱신한다.
 
@@ -124,20 +267,20 @@ Codex CLI의 `/hooks`에서 `jev@jev-kit` hook을 **신뢰**해야 hook이 실�
 
 킷 디렉터리에 로컬 변경이 있으면 pull이 실패하고 경고가 나온다. 이때는 변경을 정리한 뒤 다시 실행한다.
 
-## 4. 삭제
+## 5. 삭제
 
 | 원하는 것 | 명령 |
 | --- | --- |
 | 선택지 hook만 끄기 (모드 `off`. 플러그인, `/jev:apply`, 키는 남김) | `~/.local/share/jev-kit/install.sh uninstall` |
 | 전체 제거 (플러그인, 설정 파일과 키 포함) | `~/.local/share/jev-kit/install.sh uninstall --purge` |
 
-`--purge` 후에는 킷 디렉터리도 지우려면 직접 삭제한다 (`uninstall`은 클론을 지우지 않는다).
+`--purge` 후에는 킷 디렉터리도 지우려면 직접 삭제한다 (`uninstall`은 클론을 지우지 않는다). 문서 MCP와 공식 skill은 [§3.7](#37-제거)에서 따로 제거한다.
 
 ```bash
 rm -rf ~/.local/share/jev-kit
 ```
 
-## 5. 문제 해결
+## 6. 문제 해결
 
 | 증상 | 확인 |
 | --- | --- |
@@ -146,8 +289,12 @@ rm -rf ~/.local/share/jev-kit
 | Codex에서 hook이 실행되지 않는다 | Codex `/hooks`에서 `jev@jev-kit`를 신뢰했는지 확인한다 |
 | 점수가 표시되지 않는다 | `~/.config/jev/env`의 `JEV_OPTIONS`가 `jev`인지, `doctor --live`가 통과하는지 본다 |
 | 킷 갱신 경고 | 킷 디렉터리(`~/.local/share/jev-kit`)에 로컬 변경이 없는지 `git status`로 확인한다 |
+| 에이전트가 `typesafe-docs` 도구를 쓰지 않는다 | 등록 뒤 에이전트를 다시 시작했는지 확인한다. `claude mcp get typesafe-docs` / `codex mcp get typesafe-docs`로 상태를 본다 |
+| `claude mcp get`이 연결 실패를 보인다 | `curl -sI https://docs.typesafe.ai/mcp`가 `405`를 주면 서버는 살아 있다 (POST 전용). 다른 응답이면 엔드포인트가 바뀐 것이므로 curl 경로를 쓰고 [research/ecosystem.md](research/ecosystem.md)를 갱신한다 |
+| Codex에서 문서 조회가 `Could not resolve host`로 실패한다 | shell `curl`을 쓴 것이다. 문서 MCP를 등록하면 샌드박스 네트워크 권한 없이 조회할 수 있다 |
+| 파일시스템 도구에서 `No such file` | 경로를 추측한 것이다. `tree / -L 2`나 `rg -il "<키워드>" /`로 실제 경로를 찾는다 |
 
-## 6. 개발자용
+## 7. 개발자용
 
 ```bash
 bash kit/test.sh
