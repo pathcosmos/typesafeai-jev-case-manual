@@ -15,8 +15,8 @@
 hook은 플러그인(`hooks/hooks.json`)에 들어 있지만 **모드가 `off`(기본)면 아무것도 하지 않는다.** 설치만으로 켜지지 않는다 (INTENT Q3). 켜고 끄는 것은 기기마다 설정 파일 하나 `~/.config/jev/env`(권한 600)로 한다.
 
 ```bash
-# 다른 기기: 킷을 ~/.local/share/jev-kit에 받고 Claude 플러그인, Codex hook을 연결한다. 키는 화면에 표시되지 않게 입력받는다
-curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manual/main/install.sh | bash -s -- --options jev
+# 다른 기기 (private 저장소라 raw URL의 curl 대신 gh api. 먼저 gh auth login): 킷을 ~/.local/share/jev-kit에 받고 Claude 플러그인, Codex hook을 연결한다. 키는 화면에 표시되지 않게 입력받는다
+gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options jev
 # 이미 받은 클론에서
 ./install.sh --options jev                       # 모드 jev, 키 입력
 ./install.sh --options jev --key-env-file PATH   # 키를 복사하지 않고 다른 dotenv 파일의 TYPESAFE_API_KEY를 읽게 한다

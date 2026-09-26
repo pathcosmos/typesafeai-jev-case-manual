@@ -19,9 +19,9 @@
    ```
 4. 절차 8단계의 케이스 문서 사본은 KIT의 `cases/`에 쓴다. KIT가 읽기 전용이면(샌드박스, 플러그인 캐시) 사용자에게 알리고 내용을 전달한다.
 
-Claude Code와 Codex 모두 같은 플러그인 `jev@jev-kit`로 설치하면 `/jev:apply` 스킬이 같은 절차를 실행한다. **새 기기에는 설치 스크립트 하나로** 두 에이전트에 플러그인(스킬, 선택지 hook)을 함께 연결한다 ([kit/options/README](kit/options/README.md#설치와-켜기-installsh)):
+Claude Code와 Codex 모두 같은 플러그인 `jev@jev-kit`로 설치하면 `/jev:apply` 스킬이 같은 절차를 실행한다. **새 기기에는 설치 스크립트 하나로** 두 에이전트에 플러그인(스킬, 선택지 hook)을 함께 연결한다 ([kit/options/README](kit/options/README.md#설치와-켜기-installsh)). 저장소가 private이라 그 기기에서 먼저 `gh auth login`이 필요하고, raw URL의 `curl | bash`는 동작하지 않는다. 자세한 설치, 갱신, 삭제는 [README.md](README.md):
 ```bash
-curl -fsSL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manual/main/install.sh | bash -s -- --options jev
+gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options jev
 ```
 ```bash
 ./install.sh doctor --live
