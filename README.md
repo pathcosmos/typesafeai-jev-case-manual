@@ -113,6 +113,7 @@ Codex CLI의 `/hooks`에서 `jev@jev-kit` hook을 **신뢰**해야 hook이 실�
 | 켜기 | `~/.local/share/jev-kit/install.sh --options jev` |
 | 세션 하나만 끄기 | `JEV_OPTIONS=off claude` (환경변수가 설정 파일보다 우선) |
 | 모드 바꾸기 | `--options off` / `fake`(호출 없이 동작만 확인) / `jev` |
+| 표시 형식 바꾸기 | `~/.config/jev/env`에 `JEV_OPTIONS_FORMAT=table` 또는 `line`. 기본 `auto`는 Claude Code CLI에서 표, 데스크톱 앱과 Codex에서 한 줄 |
 
 동작과 점수의 뜻은 [kit/options/README](kit/options/README.md)를 본다. 점수는 요청에 대한 부합이지 기술적 최선의 판정이 아니다.
 
@@ -257,15 +258,27 @@ claude plugin uninstall typesafe@typesafe-ai
 
 `npx skills remove`에 `-a`를 주지 않으면 모든 에이전트의 연결을 함께 정리한다. 문서 MCP만 지우면 킷 절차는 자동으로 curl을 쓴다.
 
-## 4. 갱신
+## 4. 갱신 (다른 기기에 반영)
 
-같은 설치 명령을 다시 실행하면 킷을 `git pull --ff-only`로 받고 플러그인을 갱신한다.
+자동 갱신은 없다. 킷을 바꾼 기기에서 push하고, 다른 기기마다 설치기를 한 번 다시 실행한다.
+
+| 순서 | 어디서 | 할 일 |
+| --- | --- | --- |
+| 1 | 킷을 바꾼 기기 | `.claude-plugin/plugin.json`의 `version`을 올리고 커밋한 뒤 `main`에 push한다. **push하지 않은 변경은 다른 기기가 받을 수 없다.** 버전이 같으면 플러그인 갱신이 아무것도 하지 않는다 |
+| 2 | 다른 기기 | 아래 명령을 실행한다. 킷을 `git pull --ff-only`로 받고, Claude 플러그인을 갱신하고, Codex 플러그인을 다시 복사한다 |
+| 3 | 다른 기기 | Claude Code와 Codex를 **다시 시작한다.** 이미 열려 있는 세션은 예전 hook과 스킬을 계속 쓴다 |
+| 4 | 다른 기기 | `install.sh doctor`에서 킷 버전·커밋과 `Claude 플러그인 jev@jev-kit` 버전이 같은지 본다 |
 
 ```bash
-~/.local/share/jev-kit/install.sh --options jev
+~/.local/share/jev-kit/install.sh
 ```
 
-킷 디렉터리에 로컬 변경이 있으면 pull이 실패하고 경고가 나온다. 이때는 변경을 정리한 뒤 다시 실행한다.
+- `--options`를 빼면 기존 모드와 키를 그대로 쓴다. 모드를 바꿀 때만 `--options off|fake|jev`를 붙인다.
+- 무엇이 바뀌었는지는 `git -C ~/.local/share/jev-kit log --oneline -5`로 본다.
+- 기기마다 다른 설정(`JEV_OPTIONS_FORMAT` 등)은 `~/.config/jev/env`에 있다. 갱신해도 지워지지 않는다. 새 버전에 새 설정이 생겨도 자동으로 추가되지 않으므로, 필요하면 그 기기에서 직접 넣는다 ([kit/options/README](kit/options/README.md#환경변수)).
+- **킷을 직접 편집하는 기기**(클론에서 `./install.sh`로 설치했고, marketplace가 그 클론을 가리킨다)에서는 설치기가 pull하지 않는다. `git pull` 뒤에 `./install.sh`를 실행한다.
+- 킷 디렉터리에 로컬 변경이 있으면 pull이 실패하고 경고가 나온다. 변경을 정리한 뒤 다시 실행한다.
+- 같은 버전에서 파일만 바뀐 경우(버전을 올리지 않고 push한 경우)에는 플러그인 사본이 갱신되지 않는다. [§6](#6-문제-해결)의 재설치 명령을 쓴다.
 
 ## 5. 삭제
 
@@ -289,6 +302,8 @@ rm -rf ~/.local/share/jev-kit
 | Codex에서 hook이 실행되지 않는다 | Codex `/hooks`에서 `jev@jev-kit`를 신뢰했는지 확인한다 |
 | 점수가 표시되지 않는다 | `~/.config/jev/env`의 `JEV_OPTIONS`가 `jev`인지, `doctor --live`가 통과하는지 본다 |
 | 킷 갱신 경고 | 킷 디렉터리(`~/.local/share/jev-kit`)에 로컬 변경이 없는지 `git status`로 확인한다 |
+| 갱신했는데 예전 동작 그대로다 | 먼저 에이전트를 다시 시작한다. 그래도 같으면 `install.sh doctor`를 본다. 플러그인 버전이 킷 버전보다 낮거나, 버전은 같은데 내용이 다르면(버전을 올리지 않은 push) 다시 설치한다: `claude plugin uninstall jev@jev-kit --scope user && claude plugin install jev@jev-kit --scope user`, Codex는 `codex plugin add jev@jev-kit` |
+| 다른 기기에 새 변경이 없다 | 바꾼 기기에서 push했는지 확인한다 (`git status`가 `ahead`를 보이면 push 전이다) |
 | 에이전트가 `typesafe-docs` 도구를 쓰지 않는다 | 등록 뒤 에이전트를 다시 시작했는지 확인한다. `claude mcp get typesafe-docs` / `codex mcp get typesafe-docs`로 상태를 본다 |
 | `claude mcp get`이 연결 실패를 보인다 | `curl -sI https://docs.typesafe.ai/mcp`가 `405`를 주면 서버는 살아 있다 (POST 전용). 다른 응답이면 엔드포인트가 바뀐 것이므로 curl 경로를 쓰고 [research/ecosystem.md](research/ecosystem.md)를 갱신한다 |
 | Codex에서 문서 조회가 `Could not resolve host`로 실패한다 | shell `curl`을 쓴 것이다. 문서 MCP를 등록하면 샌드박스 네트워크 권한 없이 조회할 수 있다 |
@@ -300,4 +315,4 @@ rm -rf ~/.local/share/jev-kit
 bash kit/test.sh
 ```
 
-킷 전체 검증이다 (키 불필요, 빠름). 킷이나 지식 베이스를 바꾸면 `.claude-plugin/plugin.json`의 `version`을 올리고 `claude plugin validate .`를 실행한다. 규칙 전체는 [CLAUDE.md](CLAUDE.md)를 본다.
+킷 전체 검증이다 (키 불필요, 빠름). 킷이나 지식 베이스를 바꾸면 `.claude-plugin/plugin.json`의 `version`을 올리고 `claude plugin validate .`를 실행한다. 커밋과 push 뒤 다른 기기에 반영하는 방법은 [§4](#4-갱신-다른-기기에-반영)를 본다. 규칙 전체는 [CLAUDE.md](CLAUDE.md)를 본다.

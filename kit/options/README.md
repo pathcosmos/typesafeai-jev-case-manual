@@ -8,6 +8,17 @@
 
 (실제 출력. 값은 입력 해시로 만든 가짜라 의미가 없다.)
 
+Claude Code CLI에서는 같은 내용을 고정폭 표로 보여 준다 (`JEV_OPTIONS_FORMAT=auto`, 기본). 한글 선택지는 표시 폭(전각 2칸)으로 맞추고 20칸에서 `..`으로 자른다.
+
+```text
+Jev 선택지 점검 (확률, 판정이 아님 · 종합 = 부합 비율 × 범위 × 되돌림)
+ #  선택지                부합  범위  되돌림  종합
+ 1  Native                0.36  0.81  0.77    0.62
+ 2  Subagent-driven       0.14  0.71  0.81    0.22
+ 3  브랜치 전체를 한 ..  0.05  0.20  0.10    0.00  ⚠범위 밖  ⚠되돌리기 어려움
+종합 최고 1 · 해당 없음 0.50
+```
+
 모드는 둘이다. `JEV_OPTIONS=fake`는 실제 요청과 같은 모양에 결정적인 가짜 값을 채우고 **외부로 아무것도 보내지 않는다.** `JEV_OPTIONS=jev`는 `TYPESAFE_API_KEY`가 있을 때만 **요청 1건**을 api.typesafe.ai로 보낸다. 보내는 것은 마지막 사용자 요청, 선택지 앞 문맥(최대 12줄), 선택지 텍스트다 (필드당 2,000자 상한). 키가 없거나 실패(401, 타임아웃, 응답 누락)하면 **아무것도 표시하지 않고** 에이전트를 막지 않는다. 재시도하지 않고 시간 상한은 `JEV_OPTIONS_TIMEOUT`(기본 4초)이다. 실제 모드 출력에는 `[가짜 점수]` 태그가 없다.
 
 ## 설치와 켜기 (`install.sh`)
@@ -57,6 +68,7 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 | 변수 | 값 |
 | --- | --- |
 | `JEV_OPTIONS` | `off`(기본) · `fake` · `jev` (키 필요, 외부 전송) |
+| `JEV_OPTIONS_FORMAT` | `auto`(기본) · `table` · `line`. `auto`는 Claude Code CLI(`CLAUDE_CODE_ENTRYPOINT=cli`)에서만 여러 줄 표, 그 밖(데스크톱 앱, Codex, 확인하지 않은 표면)은 한 줄. 데스크톱 앱은 줄마다 `Stop says:`를 붙여 표가 흐트러지므로 한 줄이다 (research §4.2). 데스크톱 앱 세션 기록의 `entrypoint`는 `claude-desktop`이라 `auto`는 한 줄을 고른다. 그래도 표가 흐트러지는 표면이 있으면 `~/.config/jev/env`에 `JEV_OPTIONS_FORMAT=line`을 넣는다 |
 | `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다. **권장하지 않는다**: 도구 입력은 바뀌지만 데스크톱 앱 대화상자 화면에는 보이지 않았다 (CLI 화면은 미확인) |
 | `JEV_OPTIONS_ENV_FILE` | `TYPESAFE_API_KEY`가 환경에 없을 때 이 dotenv 파일에서 **그 한 줄만** 읽는다. 키를 hook 설정에 복사하지 않고 한 곳(예: 프로젝트 `.env`)에만 둘 때 쓴다 |
 | `JEV_OPTIONS_LOG` | 만든 요청(state 포함)을 쓸 로컬 JSONL 경로. 무엇이 보내질지 검토용 |

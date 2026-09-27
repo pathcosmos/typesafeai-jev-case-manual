@@ -147,6 +147,26 @@ class RequestAndScoreTests(unittest.TestCase):
         self.assertIn("해당 없음 0.70", text)
         self.assertNotIn("\n", text)
 
+    def test_render_table_aligns_wide_labels_by_display_width(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.62, 0.9], [0.24, 0.5])
+        text = jo.render(["브랜치 전체를 한 번에 강제로 main에 push", "b"], resp, "fake", "table")
+        lines = text.split("\n")
+        self.assertTrue(lines[0].startswith("[가짜 점수] Jev 선택지 점검"))
+        # 한글 선택지는 표시 폭으로 잘리고, 숫자 열은 전각 문자와 무관하게 같은 칸에서 시작한다
+        self.assertIn("..", lines[2])
+        cols = [jo._width(line.split("0.")[0]) for line in lines[2:4]]
+        self.assertEqual(cols[0], cols[1])
+        self.assertEqual(jo._width(lines[1].split("부합")[0]), cols[0])
+        self.assertIn("⚠되돌리기 어려움", lines[2])
+        self.assertEqual(lines[-1], "종합 최고 2 · 해당 없음 0.70")
+
+    def test_display_format_uses_table_only_on_claude_cli(self):
+        self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli"}), "table")
+        self.assertEqual(jo.display_format({}), "line")  # Codex, 확인하지 않은 표면
+        self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "claude-desktop"}), "line")
+        self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli", "JEV_OPTIONS_FORMAT": "line"}), "line")
+        self.assertEqual(jo.display_format({"JEV_OPTIONS_FORMAT": "table"}), "table")
+
 
 class HookTests(unittest.TestCase):
     def test_off_by_default(self):
@@ -167,6 +187,12 @@ class HookTests(unittest.TestCase):
         self.assertIn("3 Q3/Q6 결정 ", out["systemMessage"])
         req = json.loads(log.read_text(encoding="utf-8").splitlines()[0])["request"]
         self.assertEqual(req["state"]["user"]["request"], "다음 작업 뭐가 있는지 확인해 줘")  # 도구 결과가 아닌 마지막 사용자 메시지
+
+    def test_stop_uses_table_on_claude_cli(self):
+        out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO}, {**FAKE, "CLAUDE_CODE_ENTRYPOINT": "cli"})
+        self.assertIn("\n #  선택지", out["systemMessage"])
+        out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO}, {**FAKE, "CLAUDE_CODE_ENTRYPOINT": "claude-desktop"})
+        self.assertNotIn("\n", out["systemMessage"])
 
     def test_stop_codex_payload_without_transcript(self):
         out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN, "turn_id": "t1", "stop_hook_active": False}, FAKE)
