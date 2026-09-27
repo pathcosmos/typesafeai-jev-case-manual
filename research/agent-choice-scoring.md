@@ -60,6 +60,14 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 
 같은 선택지라도 대화상자 경로는 설명까지 state에 넣고 텍스트 경로는 label만 넣는다. 실제 모드에서는 두 경로의 점수가 달라질 수 있다.
 
+### 4.1.1 `systemMessage` 표시 시점 (2026-09-27, Claude Code CLI, 실제 Jev)
+
+이 세션(`JEV_OPTIONS=jev`)에서 실제 `AskUserQuestion`을 띄워 사용자에게 직접 물었다: Jev 선택지 점검 알림이 선택 틀보다 먼저 보였는지, 나중에 보였는지.
+
+- **[O] 결과: 선택한 뒤에야 보임.** 알림이 선택 틀과 함께, 또는 틀보다 먼저 뜨지 않았다.
+- Claude Code CLI 문서(`hooks.md`, Agent SDK `user-input.md`)에는 `systemMessage`와 인터랙티브 도구 UI(AskUserQuestion의 선택 틀) 사이의 렌더링 순서가 명시돼 있지 않다 (claude-code-guide agent 조사, 2026-09-27). PreToolUse hook은 도구 실행 전에 완료되지만, 그 출력이 터미널에 반영되는 시점은 하네스가 고정으로 정하는 것으로 보인다: 선택 틀이 터미널을 잡고 있는 동안 `systemMessage`는 화면에 반영되지 않고, 틀이 빠진 뒤(=선택 완료 후) 스크롤백에 flush되는 것으로 보인다.
+- 결론: **결정 전에 Jev 점수를 보여주는 것은 대화상자 경로에서 불가능하다** (§4.2의 "설명 수정이 화면에 안 보임"에 더해, 알림조차 결정 전에 안 보임). hook 쪽 필드(`systemMessage`, `updatedInput`, `additionalContext`) 중 이 타이밍을 바꿀 수 있는 것은 없다. 대화상자 경로는 사후 참고용일 뿐이고, 결정에 쓰려면 텍스트 선택지 경로(Stop hook, [선택지 표시 규약](../kit/options/convention.md))를 쓰게 해야 한다.
+
 ## 4.2 데스크톱 앱 실측 (2026-09-25)
 
 같은 설정을 별도 폴더(`.claude/settings.json`만)에 두고 Claude 데스크톱 앱 Code 탭의 새 세션에서 같은 한 턴을 돌렸다.

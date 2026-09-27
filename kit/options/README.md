@@ -49,7 +49,7 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 | hook | 입력 | 하는 일 |
 | --- | --- | --- |
 | `Stop` | `last_assistant_message` (Claude Code 실측, Codex 문서) | 마지막 번호 목록(2~9개)을 선택지로 본다. **선택 신호가 목록에 붙어 있을 때만**: 바로 앞 도입 줄, 또는 바로 뒤 짧은 질문 줄. 코드 블록 안은 무시. `stop_hook_active`면 아무것도 안 한다 |
-| `PreToolUse` `AskUserQuestion` | `questions[].options[]` (실측 스키마: `question`, `header`, `options[{label, description}]`, `multiSelect`) | 질문마다 점수를 `systemMessage`로 보여 준다 (데스크톱 앱에서는 "Claude Code 알림"으로 표시). 모델은 고른 label만 받으므로 점수가 모델에 새지 않는다 |
+| `PreToolUse` `AskUserQuestion` | `questions[].options[]` (실측 스키마: `question`, `header`, `options[{label, description}]`, `multiSelect`) | 질문마다 점수를 `systemMessage`로 보여 준다 (데스크톱 앱에서는 "Claude Code 알림"으로 표시). **CLI에서도 선택한 뒤에야 보인다** — 결정 전에는 안 보인다 (실측, 아래). 모델은 고른 label만 받으므로 점수가 모델에 새지 않는다 |
 
 사용자 요청 텍스트는 Claude Code의 `transcript_path`에서 마지막 사용자 메시지(도구 결과 제외)를 읽는다. 없으면 `(not available)`.
 
@@ -62,6 +62,15 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 | `reversible_<n>` | Noul | 틀렸을 때 쉽게 되돌릴 수 있는가 (삭제, push, 배포, 외부 전송 없음) |
 
 **종합**은 세 값을 한 숫자로 줄인 것이다: `(부합 ÷ 가장 높은 부합) × 범위 안 × 되돌리기 쉬움`. 부합은 선택지끼리 나눠 갖는 몫이라 선택지가 많을수록 작아지므로, 가장 높은 부합에 대한 비율로 바꿔 선택지 수의 영향을 뺀다. 곱에서는 약점 하나가 다른 값에 묻힐 수 있어서, 범위 안이나 되돌리기 쉬움이 0.3 미만이면 `⚠범위 밖` · `⚠되돌리기 어려움`을 따로 붙인다. `종합 최고 n`은 종합이 가장 높은 선택지 번호다. 이것도 요청에 대한 부합이지 기술적 최선의 판정이 아니다. 부합이 전부 낮으면(`해당 없음`이 큼) 종합 최고도 의미가 약하다.
+
+## 점수를 보고 나서 재선택하는 패턴
+
+`AskUserQuestion`(대화상자)의 `systemMessage`는 선택한 뒤에야 보인다(위 표, 실측). 되돌리기 어려운 선택처럼 **점수를 먼저 보고 정하는 게 나을 때**는 대화상자를 바로 부르지 말고 2턴으로 나눈다:
+
+1. 이 규약대로 번호 목록 + 질문 줄만 쓰고 턴을 끝낸다 (대화상자 도구를 같은 턴에 부르지 않음). `Stop` hook이 사용자의 다음 입력 전에 점수를 보여준다.
+2. 사용자의 다음 메시지에 대한 응답에서, 같은 선택지로 `AskUserQuestion`을 불러 정식으로 재선택받는다.
+
+왕복이 한 번 늘지만 기존 `Stop`/`PreToolUse` 경로를 그대로 재사용하고, "점수는 모델에 새지 않는다"는 원칙도 지킨다 — 대안(에이전트가 점수를 직접 계산해 같은 턴에 텍스트로 먼저 찍는 방식)은 왕복이 없는 대신 점수가 모델 문맥에 그대로 들어가 이 원칙을 깬다. [선택지 표시 규약](convention.md)에 이 패턴이 들어 있다.
 
 ## 환경변수
 
@@ -94,4 +103,5 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 - **실제 Jev (2026-09-25)**: 합성 선택지로 확인했다. 대화 기록에 사용자 요청이 있으면 뜻이 맞게 나온다: "실측 결과 정리해 줘"에 "결과 기록" 0.97/0.89/0.81, "main에 강제 push" 0.00/0.07/0.36. 요청이 없으면(`(not available)`) Choice가 설계대로 "해당 없음"(0.98~1.00)을 준다. 틀린 키는 표시 없이 stderr에 `HTTP 401 (auth)`만 남는다.
 - **Codex CLI 0.154 (2026-09-26)**: 설치기가 넣은 hook 2개를 `/hooks`에서 신뢰한 뒤 `codex exec`로 확인했다. `SessionStart`가 규약을 세션 맥락에 넣었고(세션 기록에서 확인), 에이전트가 규약대로 답했다. `Stop` hook이 선택지를 잡아 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인). 헤드리스 `exec`에서는 `systemMessage`가 출력 스트림과 세션 기록에 남지 않아 **화면 표시는 대화형 TUI에서 확인해야 한다.**
 - **Codex도 플러그인 한 경로로 모았다 (kit 0.1.24):** Codex는 자체 플러그인 시스템으로 Claude 형식 marketplace를 읽고, 플러그인 hook에 `CLAUDE_PLUGIN_ROOT`를 넣어 준다. `~/.codex/hooks.json` 직접 항목을 지우고 `codex plugin add jev@jev-kit`로 설치한 뒤 `codex exec --dangerously-bypass-hook-trust`(확인용, 1회)로 돌려서 플러그인의 `SessionStart`(규약 전달)와 `Stop`(선택지 인식)이 실행되는 것을 확인했다. 평소에는 `/hooks`에서 신뢰한 뒤 쓴다.
+- **CLI `systemMessage` 표시 시점 (2026-09-27, 실제 Jev)**: `AskUserQuestion`으로 사용자에게 직접 물어 확인했다 — 선택 틀이 뜰 때 Jev 알림은 **선택한 뒤에야** 보였다. 문서에도 이 순서를 정하는 필드는 없다. 즉 대화상자 경로는 결정 전에는 아무것도 못 보여준다 (설명 수정도, 알림도) — 사후 참고용일 뿐이다 ([research §4.1.1](../../research/agent-choice-scoring.md#411-systemmessage-표시-시점-2026-09-27-claude-code-cli-실제-jev)).
 
