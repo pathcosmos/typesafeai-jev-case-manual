@@ -10,11 +10,13 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
 
 환경변수 (hook 프로세스에 전달되어야 한다):
   설정 파일 ~/.config/jev/env (또는 JEV_OPTIONS_CONFIG): 아래 변수가 환경에 없으면 이 파일의 JEV_OPTIONS, TYPESAFE_API_KEY,
-                       JEV_OPTIONS_ENV_FILE을 읽는다 (install.sh가 만든다, 권한 600). 환경변수가 파일보다 우선한다
+                       JEV_OPTIONS_ENV_FILE, JEV_OPTIONS_FORMAT을 읽는다 (install.sh가 만든다, 권한 600). 환경변수가 파일보다 우선한다
   JEV_OPTIONS          off(기본) | fake | jev
                        fake: 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다
                        jev:  TYPESAFE_API_KEY가 있을 때만 api.typesafe.ai에 요청 1건을 보낸다 (요청 텍스트, 선택지 앞 문맥, 선택지).
                              키가 없거나 실패하면 아무것도 표시하지 않는다. 시간 상한 JEV_OPTIONS_TIMEOUT(초, 기본 4)
+  JEV_OPTIONS_FORMAT   auto(기본) | table | line. auto는 Claude Code CLI(CLAUDE_CODE_ENTRYPOINT=cli)에서만 여러 줄 표,
+                       그 밖(데스크톱 앱, Codex)은 한 줄. 데스크톱 앱은 줄마다 "Stop says:"를 붙여 표가 흐트러진다 (research §4.2)
   JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (기본 끔, 화면 미반영 확인, 권장하지 않음)
   JEV_OPTIONS_ENV_FILE TYPESAFE_API_KEY가 환경에 없을 때 이 dotenv 파일에서 그 한 줄만 읽는다 (키를 hook 설정에 복사하지 않기 위해)
   JEV_OPTIONS_LOG      경로를 주면 만든 Jev 요청(state 포함)을 로컬 JSONL로 남긴다 (검토용, 외부 전송 없음)
@@ -30,6 +32,7 @@ import json
 import os
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
 VERSION = "0.1.0"
@@ -250,16 +253,52 @@ def composite(n: int, answers: dict) -> list[tuple[float, list[str]]]:
     return out
 
 
-def render(options: list[str], resp: dict, mode: str) -> str:
-    """한 줄로 만든다. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2)."""
+def _width(text: str) -> int:
+    """터미널 표시 폭. 한글 같은 전각 문자는 2칸."""
+    return sum(2 if unicodedata.east_asian_width(ch) in "WF" else 1 for ch in text)
+
+
+def _cell(text: str, width: int) -> str:
+    """표시 폭 기준으로 자르고 오른쪽을 공백으로 채운다. 말줄임은 ASCII ".."다 ("…"는 모호 폭이라 터미널에 따라 2칸)."""
+    if _width(text) > width:
+        while _width(text) > width - 2:
+            text = text[:-1]
+        text += ".."
+    return text + " " * (width - _width(text))
+
+
+def display_format(env: dict) -> str:
+    """table | line. auto는 확인한 표면(Claude Code CLI)에서만 표를 쓴다."""
+    fmt = (env.get("JEV_OPTIONS_FORMAT") or "auto").strip().lower()
+    if fmt in ("table", "line"):
+        return fmt
+    return "table" if env.get("CLAUDE_CODE_ENTRYPOINT") == "cli" else "line"
+
+
+LABEL_WIDTH = 20  # 표의 선택지 열 폭 (표시 칸)
+
+
+def render(options: list[str], resp: dict, mode: str, fmt: str = "line") -> str:
+    """line: 한 줄. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2).
+    table: 고정폭 여러 줄 표 (Claude Code CLI). 줄바꿈 없이 읽히도록 한 행을 70칸 안으로 둔다."""
     a = resp["answers"]
     probs = a["best_match"]["probabilities"]
     tag = "[가짜 점수] " if mode == "fake" else ""
     scores = composite(len(options), a)
+    best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1 if scores else 0
+    if fmt == "table":
+        lines = [f"{tag}Jev 선택지 점검 (확률, 판정이 아님 · 종합 = 부합 비율 × 범위 × 되돌림)",
+                 f" #  {_cell('선택지', LABEL_WIDTH)}  부합  범위  되돌림  종합"]
+        for i, (o, (s, warn)) in enumerate(zip(options, scores)):
+            n = i + 1
+            lines.append(f" {n}  {_cell(_short(o, 48), LABEL_WIDTH)}  {probs.get(str(n), 0):.2f}  {a[f'in_scope_{n}']['noul']:.2f}  "
+                         f"{a[f'reversible_{n}']['noul']:.2f}    {s:.2f}" + "".join(f"  ⚠{w}" for w in warn))
+        tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
+        lines.append(f"종합 최고 {best}{tail}")
+        return "\n".join(lines)
     parts = [f"{i + 1} {_short(o)} {probs.get(str(i + 1), 0):.2f}/{a[f'in_scope_{i + 1}']['noul']:.2f}/{a[f'reversible_{i + 1}']['noul']:.2f}"
              f" 종합 {s:.2f}" + "".join(f" ⚠{w}" for w in warn)
              for i, (o, (s, warn)) in enumerate(zip(options, scores))]
-    best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1 if scores else 0
     tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
     return (f"{tag}Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움 → 종합, 판정이 아님): " + " · ".join(parts)
             + f" · 종합 최고 {best}" + tail)
@@ -291,7 +330,7 @@ def log_request(req: dict, event: str, env: dict):
 
 
 # ---------------- hook 진입점 ----------------
-CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE")
+CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE", "JEV_OPTIONS_FORMAT")
 CONVENTION = Path(__file__).with_name("convention.md")
 DEFAULT_CONFIG = "~/.config/jev/env"  # 테스트는 이 값을 없는 경로로 바꾼다
 
@@ -342,10 +381,11 @@ def handle(payload: dict, env: dict) -> dict | None:
         req = build_request(options, user_request, context)
         log_request(req, event, env)
         resp = score(req, mode, env)
-        return {"systemMessage": render(options, resp, mode)} if resp else None
+        return {"systemMessage": render(options, resp, mode, display_format(env))} if resp else None
     if event == "PreToolUse" and payload.get("tool_name") == "AskUserQuestion":
         ti = payload.get("tool_input") or {}
         per_q, msgs = [], []
+        fmt = display_format(env)
         for question, options in ask_user_options(ti):
             req = build_request(options, user_request, question)
             log_request(req, event, env)
@@ -353,10 +393,10 @@ def handle(payload: dict, env: dict) -> dict | None:
             if not resp:
                 return None
             per_q.append({"answers": resp["answers"], "fake": mode == "fake"})
-            msgs.append(render(options, resp, mode))
+            msgs.append(render(options, resp, mode, fmt))
         if not per_q:
             return None
-        out: dict = {"systemMessage": "\n".join(msgs)}
+        out: dict = {"systemMessage": ("\n\n" if fmt == "table" else "\n").join(msgs)}
         if env.get("JEV_OPTIONS_REWRITE") == "1":
             out["hookSpecificOutput"] = {"hookEventName": "PreToolUse", "updatedInput": annotate_ask(ti, per_q)}
         return out

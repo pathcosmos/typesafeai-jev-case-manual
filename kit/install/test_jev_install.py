@@ -134,6 +134,9 @@ class InstallTests(unittest.TestCase):
         cfg = self.home / ".config" / "jev" / "env"
         self.assertIn("JEV_OPTIONS=off", cfg.read_text())
         self.assertIn(KEY, cfg.read_text())  # 끄기만 하면 키는 남는다
+        cfg.write_text(cfg.read_text() + "JEV_OPTIONS_FORMAT=line\n")  # 사용자가 직접 넣은 표시 형식
+        self.run_install("install", "--options", "jev")
+        self.assertIn("JEV_OPTIONS_FORMAT=line", cfg.read_text())  # 다시 설치해도 남는다
         self.run_install("uninstall", "--purge")
         self.assertFalse(cfg.exists())
         self.assertIn("plugin uninstall jev@jev-kit", self.calls())

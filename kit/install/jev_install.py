@@ -8,7 +8,7 @@
   python3 kit/install/jev_install.py uninstall [--purge]
 
 하는 일 (여러 번 실행해도 결과가 같다. 고치는 설정 파일은 먼저 *.bak-<시각>으로 백업한다):
-- ~/.config/jev/env (권한 600): 선택지 hook 모드 JEV_OPTIONS와 TYPESAFE_API_KEY (또는 키가 든 dotenv 경로 JEV_OPTIONS_ENV_FILE).
+- ~/.config/jev/env (권한 600): 선택지 hook 모드 JEV_OPTIONS와 TYPESAFE_API_KEY (또는 키가 든 dotenv 경로 JEV_OPTIONS_ENV_FILE), 사용자가 넣은 표시 형식 JEV_OPTIONS_FORMAT은 유지.
   키는 화면에 표시하지 않고 입력받는다 (getpass). 출력, 로그, 다른 파일에 키를 쓰지 않는다.
 - Claude Code: 킷 디렉터리를 marketplace `jev-kit`로 등록하고 플러그인 `jev@jev-kit`를 설치하거나 갱신한다.
   선택지 hook은 플러그인의 hooks/hooks.json에 들어 있다 (모드가 off면 아무것도 하지 않는다).
@@ -34,7 +34,7 @@ from pathlib import Path
 HOOK_MARK = "kit/options/jev_options.py"
 MARKETPLACE = "jev-kit"
 PLUGIN = "jev@jev-kit"
-CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE")
+CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE", "JEV_OPTIONS_FORMAT")
 KIT_DEFAULT = Path(__file__).resolve().parents[2]
 
 
@@ -328,7 +328,7 @@ def cmd_doctor(ctx: Ctx, a) -> int:
         sys.path.insert(0, str(ctx.kit / "kit" / "options"))
         import jev_options  # noqa: E402
         payload = {"hook_event_name": "Stop", "last_assistant_message": "1. 테스트 추가\n2. 기능 삭제\n어느 것으로 할까요?"}
-        out = jev_options.handle(payload, dict(os.environ))
+        out = jev_options.handle(payload, {**os.environ, "JEV_OPTIONS_FORMAT": "line"})  # 점검 줄 하나에 담는다
         line(bool(out), "실제 점수 호출 (합성 선택지 1건): " + (out["systemMessage"][:120] if out else "표시 없음 (키, 네트워크 확인)"))
     print("정상" if ok else "문제 있음")
     return 0 if ok else 1
