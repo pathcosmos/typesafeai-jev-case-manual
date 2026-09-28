@@ -274,18 +274,23 @@ def composite(n: int, answers: dict) -> list[tuple[float, list[str]]]:
     return out
 
 
-def recommend_warning(recommended: int | None, scores: list[tuple[float, list[str]]], probs: dict, best: int) -> str:
-    """에이전트가 문구로 밝힌 추천 번호가 코드가 계산한 점수와 어긋나는지만 본다 (판정이 아니라 재확인 신호).
-    "진행할 가치가 있는가"는 값·비용·위험을 하나로 뭉친 판정이라 Jev에 묻지 않는다 — 어긋남이 없으면 빈 문자열.
-    부합이 전부 낮으면(해당 없음이 큼) 종합 최고 자체가 근거가 약하므로, 그때는 "추천 ≠ 종합 최고"만으로 재검토를 걸지 않는다
-    (자체 ⚠ 경고는 부합과 무관한 별개 신호라 그대로 본다)."""
+def recommend_status(recommended: int | None, scores: list[tuple[float, list[str]]], probs: dict, best: int) -> str:
+    """에이전트가 문구로 밝힌 추천 번호를 코드가 계산한 점수와 대조해 3가지 상태 중 하나를 돌려준다 (판정이 아니라 재확인 신호,
+    긍정 확인이 아니다 — "재검토 신호 없음"은 "진행해도 된다"는 뜻이 아니다):
+      - 추천 선택지 자체에 ⚠ 경고(범위 밖·되돌리기 어려움)가 있으면 재검토 필요 (부합과 무관한 별개 신호라 그대로 본다)
+      - 해당 없음이 크면(부합 자체가 근거가 약함) "추천 ≠ 종합 최고"만으로는 판단하지 않고 근거 약함이라고만 알린다
+      - 그 밖에 추천이 종합 최고와 다르면 재검토 필요, 같으면 재검토 신호 없음
+    "진행할 가치가 있는가"라는 참/거짓 판정 자체는 값·비용·위험을 하나로 뭉친 것이라 Jev에 묻지 않는다 (README §추천 재검토)."""
     if not recommended or not 1 <= recommended <= len(scores):
         return ""
     _, warn = scores[recommended - 1]
-    mismatch = recommended != best and probs.get("none", 0) < 0.3
-    if warn or mismatch:
-        return f"⚠추천 재검토({recommended})"
-    return ""
+    if warn:
+        return f"⚠추천 재검토({recommended}) 자체 경고: {'·'.join(warn)}"
+    if probs.get("none", 0) >= 0.3:
+        return f"추천({recommended}) 판단 근거 약함"
+    if recommended != best:
+        return f"⚠추천 재검토({recommended}) 종합 최고 {best}과 다름"
+    return f"추천({recommended}) 재검토 신호 없음"
 
 
 def _width(text: str) -> int:
@@ -316,14 +321,14 @@ LABEL_WIDTH = 20  # 표의 선택지 열 폭 (표시 칸)
 def render(options: list[str], resp: dict, mode: str, fmt: str = "line", recommended: int | None = None) -> str:
     """line: 한 줄. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2).
     table: 고정폭 여러 줄 표 (Claude Code CLI). 줄바꿈 없이 읽히도록 한 행을 70칸 안으로 둔다.
-    recommended: 에이전트 문구에 있던 추천 번호(코드가 파싱). 종합 최고와 다르거나 자체 경고가 있으면 ⚠추천 재검토를 덧붙인다."""
+    recommended: 에이전트 문구에 있던 추천 번호(코드가 파싱). 추천이 있으면 매번 3상태(재검토 필요·근거 약함·재검토 신호 없음)를 붙인다."""
     a = resp["answers"]
     probs = a["best_match"]["probabilities"]
     tag = "[가짜 점수] " if mode == "fake" else ""
     scores = composite(len(options), a)
     best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1 if scores else 0
     tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
-    note = recommend_warning(recommended, scores, probs, best)
+    note = recommend_status(recommended, scores, probs, best)
     if note:
         tail += f" · {note}"
     if fmt == "table":

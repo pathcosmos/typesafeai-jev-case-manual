@@ -190,40 +190,56 @@ class RequestAndScoreTests(unittest.TestCase):
         self.assertEqual(recommended2, 2)
         self.assertNotIn("추천", labels2[1])
 
-    def test_recommend_warning_no_flag_when_recommended_matches_and_has_no_weakness(self):
+    def test_recommend_status_no_signal_when_recommended_matches_and_has_no_weakness(self):
         resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.9, 0.9], [0.9, 0.9])
         scores = jo.composite(2, resp["answers"])
         probs = resp["answers"]["best_match"]["probabilities"]
-        self.assertEqual(jo.recommend_warning(1, scores, probs, best=1), "")
-        self.assertEqual(jo.recommend_warning(None, scores, probs, best=1), "")
-        self.assertEqual(jo.recommend_warning(9, scores, probs, best=1), "")  # 범위 밖 번호는 무시
+        self.assertEqual(jo.recommend_status(1, scores, probs, best=1), "추천(1) 재검토 신호 없음")
+        self.assertEqual(jo.recommend_status(None, scores, probs, best=1), "")  # 추천 문구 자체가 없으면 아무것도 안 붙는다
+        self.assertEqual(jo.recommend_status(9, scores, probs, best=1), "")  # 범위 밖 번호는 무시
 
-    def test_recommend_warning_flags_own_weakness_even_when_recommended_matches_best(self):
+    def test_recommend_status_flags_own_weakness_even_when_recommended_matches_best(self):
         resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.2, 0.5], [0.9, 0.5])  # 1번은 범위 밖(0.2)인데도 종합 최고
         scores = jo.composite(2, resp["answers"])
         probs = resp["answers"]["best_match"]["probabilities"]
         best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1
         self.assertEqual(best, 1)
-        self.assertEqual(jo.recommend_warning(1, scores, probs, best=best), "⚠추천 재검토(1)")
+        self.assertEqual(jo.recommend_status(1, scores, probs, best=best), "⚠추천 재검토(1) 자체 경고: 범위 밖")
 
-    def test_recommend_warning_ignores_mismatch_when_fit_carries_no_signal(self):
-        # 해당 없음이 크면 부합 자체가 근거가 약하므로 "추천 ≠ 종합 최고"만으로는 재검토를 걸지 않는다
+    def test_recommend_status_reports_weak_basis_when_fit_carries_no_signal(self):
+        # 해당 없음이 크면 부합 자체가 근거가 약하므로 "추천 ≠ 종합 최고"라고 재검토를 걸지 않고 근거 약함만 알린다
         resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.9, 0.9], [0.9, 0.9])
         scores = jo.composite(2, resp["answers"])
         probs = resp["answers"]["best_match"]["probabilities"]
-        self.assertEqual(jo.recommend_warning(1, scores, probs, best=2), "")
+        self.assertEqual(jo.recommend_status(1, scores, probs, best=2), "추천(1) 판단 근거 약함")
 
-    def test_recommend_warning_flags_mismatch_when_fit_carries_signal(self):
+    def test_recommend_status_flags_mismatch_when_fit_carries_signal(self):
         resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.05}, [0.9, 0.9], [0.9, 0.9])
         scores = jo.composite(2, resp["answers"])
         probs = resp["answers"]["best_match"]["probabilities"]
-        self.assertEqual(jo.recommend_warning(1, scores, probs, best=2), "⚠추천 재검토(1)")
+        self.assertEqual(jo.recommend_status(1, scores, probs, best=2), "⚠추천 재검토(1) 종합 최고 2과 다름")
 
-    def test_render_appends_recommend_review_note_when_it_mismatches(self):
+    def test_render_appends_recommend_review_note_when_recommended_has_own_warning(self):
         resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.62, 0.9], [0.24, 0.5])
         text = jo.render(["a", "b"], resp, "jev", recommended=1)
-        self.assertIn("⚠추천 재검토(1)", text)
+        self.assertIn("⚠추천 재검토(1) 자체 경고: 되돌리기 어려움", text)
         self.assertIn("판정이 아님", text)  # 새 신호도 판정으로 읽히지 않게 같은 문구 아래 붙는다
+
+    def test_render_reports_weak_basis_when_recommended_has_no_own_warning(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.9, 0.9], [0.9, 0.9])
+        text = jo.render(["a", "b"], resp, "jev", recommended=1)
+        self.assertIn("추천(1) 판단 근거 약함", text)
+
+    def test_render_appends_no_signal_note_when_recommendation_matches(self):
+        resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.9, 0.9], [0.9, 0.9])
+        text = jo.render(["a", "b"], resp, "jev", recommended=1)
+        self.assertIn("추천(1) 재검토 신호 없음", text)  # 일치해도 침묵하지 않고 상태를 밝힌다 (긍정 확인은 아님)
+
+    def test_render_omits_recommend_note_when_no_recommendation_was_parsed(self):
+        resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.9, 0.9], [0.9, 0.9])
+        text = jo.render(["a", "b"], resp, "jev", recommended=None)
+        self.assertNotIn("추천(", text)
+        self.assertNotIn("재검토", text)
 
     def test_display_format_uses_table_only_on_claude_cli(self):
         self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli"}), "table")
