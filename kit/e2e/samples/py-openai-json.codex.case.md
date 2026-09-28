@@ -1,4 +1,4 @@
-> 원본: `/private/tmp/claude-501/-Users-lanco-taketimes-typesafeai-jev-case-manual/fa1298be-1bed-49ae-b500-54ae49d47649/scratchpad/e2e-codex/py/docs/jev-case.md`
+> 원본: e2e 테스트용 합성 샘플 프로젝트(`py-openai-json`, Codex 실행)의 스크래치 클론 `docs/jev-case.md`
 > 브랜치: `jev/apply-20260925`
 > 문서 커밋: `5a0c2e53b35d856c68c4ecb7f0914e06b559ab51`
 > 코드 커밋: `937a9cd`

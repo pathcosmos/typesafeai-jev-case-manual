@@ -1,5 +1,5 @@
 <!--
-사본 (KIT cases/). 원본: /private/tmp/claude-501/-Users-lanco-taketimes-typesafeai-jev-case-manual/fa1298be-1bed-49ae-b500-54ae49d47649/scratchpad/e2e/ts-llm-heuristic/docs/jev-case.md
+사본 (KIT cases/). 원본: e2e 테스트용 합성 샘플 프로젝트(`ts-llm-heuristic`)의 스크래치 클론 docs/jev-case.md
 브랜치: jev/apply-20260925 · 커밋: a99c624 · 복사일: 2026-09-25
 비밀 정보, 운영 데이터 원문, 표본 원문 없음 (측정 건너뜀, 표본 없음)
 -->

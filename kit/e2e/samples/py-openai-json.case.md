@@ -1,6 +1,6 @@
 # Case: support-desk
 
-> **사본.** 원본: `/private/tmp/claude-501/-Users-lanco-taketimes-typesafeai-jev-case-manual/fa1298be-1bed-49ae-b500-54ae49d47649/scratchpad/e2e/py-openai-json/docs/jev-case.md` · 브랜치 `jev/apply-20260925` · 커밋 `966d093` · 비밀·운영 데이터·표본 원문은 넣지 않았다.
+> **사본.** 원본: e2e 테스트용 합성 샘플 프로젝트(`py-openai-json`)의 스크래치 클론 `docs/jev-case.md` · 브랜치 `jev/apply-20260925` · 커밋 `966d093` · 비밀·운영 데이터·표본 원문은 넣지 않았다.
 
 | 항목 | 값 |
 | --- | --- |
