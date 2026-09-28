@@ -3,7 +3,7 @@
 TypeSafe AI의 System One 모델 **Jev**(Choice / Score / Noul 타입 판단)를 코딩 에이전트가 **다른 프로젝트에 적용**하도록 돕는 킷이다. 지식 베이스(문서)와 실행 도구(플러그인 스킬 `/jev:apply`, 선택지 점검 hook)로 이루어져 있다.
 
 - 지원 에이전트: Claude Code, Codex (같은 플러그인 `jev@jev-kit`)
-- 저장소 상태: **private**. 설치하는 기기에서 GitHub 인증이 필요하다.
+- 저장소 상태: **public**. 별도 GitHub 인증 없이 클론·설치할 수 있다.
 - 문서 구조와 작성 원칙: [INTENT.md](INTENT.md), [CLAUDE.md](CLAUDE.md). 에이전트 진입점: [AGENTS.md](AGENTS.md)
 
 ## 1. 설치
@@ -14,7 +14,7 @@ TypeSafe AI의 System One 모델 **Jev**(Choice / Score / Noul 타입 판단)를
 | --- | --- |
 | `git`, `python3` | `git --version`, `python3 --version` |
 | Claude Code 또는 Codex CLI | 둘 중 설치된 것만 연결된다 (`--no-claude`, `--no-codex`로 제외 가능) |
-| GitHub 인증 | `gh auth login` (저장소가 private이라 필수) |
+| GitHub 인증 | 저장소가 public이라 필수는 아니다. `gh repo clone`을 쓰거나 API rate limit을 넉넉히 쓰려면 `gh auth login`을 해도 된다 |
 | TypeSafe API 키 | 선택지 점검 hook을 `jev` 모드로 켜거나 `--live`/측정을 쓸 때만 필요. 서버 측 기기에만 둔다 |
 
 ### TypeSafe API 키 발급
@@ -34,21 +34,21 @@ SDK나 직접 호출 코드에서 쓸 때는 `TYPESAFE_API_KEY` 환경변수를 
 ### 방법 A: 저장소를 받아서 설치 (권장)
 
 ```bash
-gh repo clone pathcosmos/typesafeai-jev-case-manual ~/.local/share/jev-kit
+git clone https://github.com/pathcosmos/typesafeai-jev-case-manual ~/.local/share/jev-kit
 ```
 ```bash
 ~/.local/share/jev-kit/install.sh --options jev
 ```
 
-`--options jev`는 선택지 점검 hook을 켜고 API 키를 물어본다 (입력은 화면에 표시되지 않는다). hook 없이 스킬만 쓰려면 `--options`를 빼면 된다 (기본 `off`).
+`gh`가 있으면 `gh repo clone pathcosmos/typesafeai-jev-case-manual ~/.local/share/jev-kit`도 된다. `--options jev`는 선택지 점검 hook을 켜고 API 키를 물어본다 (입력은 화면에 표시되지 않는다). hook 없이 스킬만 쓰려면 `--options`를 빼면 된다 (기본 `off`).
 
-### 방법 B: 한 줄 설치 (`gh`로 스크립트를 받아 실행)
+### 방법 B: 한 줄 설치 (`curl | bash`)
 
 ```bash
-gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options jev
+curl -sL https://raw.githubusercontent.com/pathcosmos/typesafeai-jev-case-manual/main/install.sh | bash -s -- --options jev
 ```
 
-`raw.githubusercontent.com`을 쓰는 `curl | bash`는 저장소가 public일 때만 동작한다. private에서는 404가 나므로 위 방식을 쓴다.
+저장소가 public이라 인증 없이 동작한다.
 
 ### 설치기가 하는 일
 
@@ -311,7 +311,7 @@ rm -rf ~/.local/share/jev-kit
 
 | 증상 | 확인 |
 | --- | --- |
-| 클론이나 스크립트 받기에서 404, 인증 오류 | `gh auth status`. 저장소가 private이라 그 기기에서 `gh auth login`이 필요하다 |
+| 클론이나 스크립트 받기에서 404, 인증 오류 | 저장소 경로(`pathcosmos/typesafeai-jev-case-manual`)와 네트워크를 확인한다. `gh`를 쓴다면 `gh auth status`로 로그인 상태도 본다 |
 | `/jev:apply`가 보이지 않는다 | `install.sh doctor`로 플러그인 등록을 확인한다. Claude Code를 다시 시작한다 |
 | Codex에서 hook이 실행되지 않는다 | Codex `/hooks`에서 `jev@jev-kit`를 신뢰했는지 확인한다 |
 | 점수가 표시되지 않는다 | `~/.config/jev/env`의 `JEV_OPTIONS`가 `jev`인지, `doctor --live`가 통과하는지 본다 |
