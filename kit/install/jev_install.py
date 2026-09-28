@@ -140,7 +140,10 @@ def strip_convention_block(ctx: Ctx, p: Path) -> bool:
 
 # ---------------- Claude Code ----------------
 def run(cmd: list[str]) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=180)
+    # stdin을 부모 것(파이프거나 tty가 아닐 수 있다)으로 물려받으면, Bun으로 빌드된 claude/codex CLI가
+    # kqueue 기반 fd 감시 중 "EINVAL: invalid argument, kqueue"로 죽는 사례가 있다 (macOS, non-tty 부모).
+    # 아래 명령은 모두 비대화형이라 stdin이 필요 없으므로 명시적으로 끊는다.
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=180, stdin=subprocess.DEVNULL)
 
 
 def claude_step(ctx: Ctx):
