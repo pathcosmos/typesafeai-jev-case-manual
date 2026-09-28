@@ -46,12 +46,13 @@ FAKE = {"JEV_OPTIONS": "fake"}
 
 class ParseTests(unittest.TestCase):
     def test_korean_numbered_options_with_question_after(self):
-        opts, ctx = jo.parse_options(KO)
+        opts, ctx, recommended = jo.parse_options(KO)
         self.assertEqual(opts, ["dynamic-agents 브랜치 push: 리뷰용", "평가셋 라벨링: 키 필요", "Q3/Q6 결정"])
         self.assertIn("다음으로 할 수 있는 일", ctx)
+        self.assertIsNone(recommended)  # 질문 줄에 추천 번호가 없으면 None
 
     def test_english_paren_style_with_question(self):
-        opts, _ = jo.parse_options(EN)
+        opts, _, _ = jo.parse_options(EN)
         self.assertEqual(opts, ["Retry the request in the client", "Raise the timeout in the gateway"])
 
     def test_step_list_without_choice_cue_is_skipped(self):
@@ -72,9 +73,19 @@ class ParseTests(unittest.TestCase):
 
     def test_convention_example_is_detected_and_keeps_recommendation_out_of_options(self):
         text = "다음 작업 후보입니다.\n\n1. 원문 한국어 케이스 추가\n2. 실제 Jev 모드 연결\n3. 대화형 hook 표시 확인\n어느 것으로 진행할까요? (추천: 3)"
-        opts, _ = jo.parse_options(text)
+        opts, _, recommended = jo.parse_options(text)
         self.assertEqual(opts, ["원문 한국어 케이스 추가", "실제 Jev 모드 연결", "대화형 hook 표시 확인"])
         self.assertFalse(any("추천" in o for o in opts))  # 추천은 질문 줄에 있으므로 state의 선택지 문구에 섞이지 않는다
+        self.assertEqual(recommended, 3)  # 번호는 코드가 읽는다 (Jev로는 보내지 않음)
+
+    def test_recommended_number_out_of_range_is_ignored(self):
+        text = "1. a\n2. b\n어느 것으로 할까요? (추천: 9)"
+        self.assertIsNone(jo.parse_options(text)[2])
+
+    def test_recommendation_word_in_intro_line_is_not_mistaken_for_a_cue(self):
+        # "추천 N가지"의 N은 목록 앞 도입 문장일 뿐 추천 선택지 번호가 아니다. 질문 줄에만 있는 걸로 본다
+        text = "추천 2가지 방법입니다.\n1. a\n2. b\n어느 것으로 할까요?"
+        self.assertIsNone(jo.parse_options(text)[2])
 
     def test_last_block_wins(self):
         text = "Plan:\n1. a\n2. b\n\nWhich next?\n1. push\n2. wait"
@@ -160,6 +171,60 @@ class RequestAndScoreTests(unittest.TestCase):
         self.assertIn("⚠되돌리기 어려움", lines[2])
         self.assertEqual(lines[-1], "종합 최고 2 · 해당 없음 0.70")
 
+    def test_ask_user_options_strips_recommended_suffix_and_reports_index(self):
+        ti = {"questions": [{"question": "Which?", "options": [
+            {"label": "Native (Recommended)", "description": "d1"}, {"label": "Subagent", "description": "d2"}]}]}
+        _, labels, recommended = jo.ask_user_options(ti)[0]
+        self.assertEqual(recommended, 1)
+        self.assertFalse(any("recommended" in l.lower() for l in labels))  # state로 보내는 문구에는 남지 않는다
+
+    def test_ask_user_options_recognizes_korean_and_markdown_wrapped_suffix(self):
+        ti = {"questions": [{"question": "어느 것?", "options": [
+            {"label": "**Subagent-driven (Recommended)**"}, {"label": "Native (추천)"}]}]}
+        _, labels, recommended = jo.ask_user_options(ti)[0]
+        self.assertEqual(recommended, 1)  # 굵게 감싸도 접미사를 인식한다
+        self.assertNotIn("Recommended", labels[0])
+        ti2 = {"questions": [{"question": "어느 것?", "options": [
+            {"label": "Native"}, {"label": "Subagent (추천)"}]}]}
+        _, labels2, recommended2 = jo.ask_user_options(ti2)[0]
+        self.assertEqual(recommended2, 2)
+        self.assertNotIn("추천", labels2[1])
+
+    def test_recommend_warning_no_flag_when_recommended_matches_and_has_no_weakness(self):
+        resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.9, 0.9], [0.9, 0.9])
+        scores = jo.composite(2, resp["answers"])
+        probs = resp["answers"]["best_match"]["probabilities"]
+        self.assertEqual(jo.recommend_warning(1, scores, probs, best=1), "")
+        self.assertEqual(jo.recommend_warning(None, scores, probs, best=1), "")
+        self.assertEqual(jo.recommend_warning(9, scores, probs, best=1), "")  # 범위 밖 번호는 무시
+
+    def test_recommend_warning_flags_own_weakness_even_when_recommended_matches_best(self):
+        resp = self._resp({"1": 0.6, "2": 0.3, "none": 0.1}, [0.2, 0.5], [0.9, 0.5])  # 1번은 범위 밖(0.2)인데도 종합 최고
+        scores = jo.composite(2, resp["answers"])
+        probs = resp["answers"]["best_match"]["probabilities"]
+        best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1
+        self.assertEqual(best, 1)
+        self.assertEqual(jo.recommend_warning(1, scores, probs, best=best), "⚠추천 재검토(1)")
+
+    def test_recommend_warning_ignores_mismatch_when_fit_carries_no_signal(self):
+        # 해당 없음이 크면 부합 자체가 근거가 약하므로 "추천 ≠ 종합 최고"만으로는 재검토를 걸지 않는다
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.9, 0.9], [0.9, 0.9])
+        scores = jo.composite(2, resp["answers"])
+        probs = resp["answers"]["best_match"]["probabilities"]
+        self.assertEqual(jo.recommend_warning(1, scores, probs, best=2), "")
+
+    def test_recommend_warning_flags_mismatch_when_fit_carries_signal(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.05}, [0.9, 0.9], [0.9, 0.9])
+        scores = jo.composite(2, resp["answers"])
+        probs = resp["answers"]["best_match"]["probabilities"]
+        self.assertEqual(jo.recommend_warning(1, scores, probs, best=2), "⚠추천 재검토(1)")
+
+    def test_render_appends_recommend_review_note_when_it_mismatches(self):
+        resp = self._resp({"1": 0.10, "2": 0.20, "none": 0.70}, [0.62, 0.9], [0.24, 0.5])
+        text = jo.render(["a", "b"], resp, "jev", recommended=1)
+        self.assertIn("⚠추천 재검토(1)", text)
+        self.assertIn("판정이 아님", text)  # 새 신호도 판정으로 읽히지 않게 같은 문구 아래 붙는다
+
     def test_display_format_uses_table_only_on_claude_cli(self):
         self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli"}), "table")
         self.assertEqual(jo.display_format({}), "line")  # Codex, 확인하지 않은 표면
@@ -215,6 +280,18 @@ class HookTests(unittest.TestCase):
         self.assertTrue(new[0]["description"].endswith("warm"))
         self.assertEqual(ti["questions"][0]["options"][0]["description"], "warm")  # 원본은 그대로
         self.assertEqual(out["hookSpecificOutput"]["hookEventName"], "PreToolUse")
+
+    def test_ask_user_question_recommended_label_is_stripped_before_it_reaches_jev(self):
+        ti = {"questions": [{"question": "Which approach?", "options": [
+            {"label": "Native (Recommended)", "description": "d1"}, {"label": "Subagent-driven", "description": "d2"}]}]}
+        log = Path(tempfile.mkdtemp()) / "req.jsonl"
+        p = {"hook_event_name": "PreToolUse", "tool_name": "AskUserQuestion", "tool_input": ti}
+        out = jo.handle(p, {**FAKE, "JEV_OPTIONS_LOG": str(log)})
+        self.assertIsNotNone(out)
+        logged = json.loads(log.read_text(encoding="utf-8").splitlines()[0])["request"]
+        texts = [o["text"] for o in logged["state"]["options"]]
+        self.assertFalse(any("recommended" in t.lower() for t in texts))  # 설득 문구가 state로 새지 않는다
+        self.assertIn("Native — d1", texts)
 
     def test_session_start_injects_convention_only_when_on(self):
         self.assertIsNone(jo.handle({"hook_event_name": "SessionStart"}, {}))

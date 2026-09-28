@@ -47,18 +47,25 @@ CHOICE_CUE = re.compile(
     r"\?|？|할까|할까요|원하시|원하는|골라|선택|어느|어떤 것|어떻게 할|진행할|정해 주|결정해|알려 주"
     r"|which|would you like|should i|do you want|prefer|choose|pick|option|let me know",
     re.I)
+RECOMMENDED_CUE = re.compile(r"(?:추천|recommended)\s*[:：]\s*(\d{1,2})", re.I)  # 질문 줄의 "(추천: N)"에서 번호만 코드가 읽는다 (Jev로는 보내지 않음). 콜론 필수 — "추천 2가지 방법입니다" 같은 도입 문장 오탐 방지
+RECOMMENDED_SUFFIX = re.compile(r"\s*\((?:recommended|추천)\)\s*$", re.I)  # AskUserQuestion 라벨 끝의 "(Recommended)"/"(추천)" — state로 보내기 전에 지운다 (anchoring)
 
 
 # ---------------- 선택지 찾기 (코드가 한다) ----------------
+def _strip_markdown(label: str) -> str:
+    return re.sub(r"\*\*|__|`", "", label).strip()
+
+
 def _clean(label: str) -> str:
-    label = re.sub(r"\*\*|__|`", "", label).strip()
+    label = _strip_markdown(label)
+    label = RECOMMENDED_SUFFIX.sub("", label).strip()
     return label[:300]
 
 
-def parse_options(text: str) -> tuple[list[str], str] | None:
+def parse_options(text: str) -> tuple[list[str], str, int | None] | None:
     """마지막 번호 목록 블록을 선택지로 본다. 코드 블록 안은 무시한다.
     선택을 묻는 신호(물음표, '할까요', 'which' 등)가 목록 바로 앞이나 뒤에 없으면 None (작업 단계 목록 같은 것은 건너뛴다).
-    반환: (선택지 라벨들, 목록 앞 문맥)"""
+    반환: (선택지 라벨들, 목록 앞 문맥, 추천 번호 또는 None)"""
     if not text:
         return None
     lines, in_code, blocks, cur = text.splitlines(), False, [], None
@@ -95,17 +102,31 @@ def parse_options(text: str) -> tuple[list[str], str] | None:
     if not (CHOICE_CUE.search(before) or (CHOICE_CUE.search(after) and len(after.strip()) <= MAX_CUE_LINE)):
         return None
     context = "\n".join(lines[max(0, b["start"] - 12):b["start"]]).strip()
-    return items, context[-MAX_TEXT:]
+    # 추천 번호는 질문 줄(목록 바로 뒤)에만 있다고 본다 (선택지 표시 규약) — 도입 줄(before)은 검사하지 않는다
+    m = RECOMMENDED_CUE.search(after)
+    recommended = int(m.group(1)) if m else None
+    if recommended is not None and not 1 <= recommended <= len(items):
+        recommended = None
+    return items, context[-MAX_TEXT:], recommended
 
 
-def ask_user_options(tool_input: dict) -> list[tuple[str, list[str]]]:
-    """AskUserQuestion의 questions[].options[].label."""
+def ask_user_options(tool_input: dict) -> list[tuple[str, list[str], int | None]]:
+    """AskUserQuestion의 questions[].options[].label. 세 번째 값은 라벨이 "(Recommended)"로 끝나는 선택지의 1-based 번호(없으면 None).
+    그 문구는 state로 보내는 라벨에서는 지운다 (anchoring)."""
     out = []
     for q in (tool_input or {}).get("questions", []) or []:
-        labels = [_clean(o.get("label", "")) + (f" — {_clean(o['description'])}" if o.get("description") else "")
-                  for o in q.get("options", []) or [] if isinstance(o, dict)]
-        if 2 <= len(labels) <= MAX_OPTIONS:
-            out.append((q.get("question") or q.get("header") or "", labels))
+        opts = [o for o in q.get("options", []) or [] if isinstance(o, dict)]
+        if not 2 <= len(opts) <= MAX_OPTIONS:
+            continue
+        recommended = None
+        labels = []
+        for i, o in enumerate(opts):
+            raw = o.get("label", "") or ""
+            if recommended is None and RECOMMENDED_SUFFIX.search(_strip_markdown(raw)):
+                recommended = i + 1
+            label = _clean(raw) + (f" — {_clean(o['description'])}" if o.get("description") else "")
+            labels.append(label)
+        out.append((q.get("question") or q.get("header") or "", labels, recommended))
     return out
 
 
@@ -253,6 +274,20 @@ def composite(n: int, answers: dict) -> list[tuple[float, list[str]]]:
     return out
 
 
+def recommend_warning(recommended: int | None, scores: list[tuple[float, list[str]]], probs: dict, best: int) -> str:
+    """에이전트가 문구로 밝힌 추천 번호가 코드가 계산한 점수와 어긋나는지만 본다 (판정이 아니라 재확인 신호).
+    "진행할 가치가 있는가"는 값·비용·위험을 하나로 뭉친 판정이라 Jev에 묻지 않는다 — 어긋남이 없으면 빈 문자열.
+    부합이 전부 낮으면(해당 없음이 큼) 종합 최고 자체가 근거가 약하므로, 그때는 "추천 ≠ 종합 최고"만으로 재검토를 걸지 않는다
+    (자체 ⚠ 경고는 부합과 무관한 별개 신호라 그대로 본다)."""
+    if not recommended or not 1 <= recommended <= len(scores):
+        return ""
+    _, warn = scores[recommended - 1]
+    mismatch = recommended != best and probs.get("none", 0) < 0.3
+    if warn or mismatch:
+        return f"⚠추천 재검토({recommended})"
+    return ""
+
+
 def _width(text: str) -> int:
     """터미널 표시 폭. 한글 같은 전각 문자는 2칸."""
     return sum(2 if unicodedata.east_asian_width(ch) in "WF" else 1 for ch in text)
@@ -278,14 +313,19 @@ def display_format(env: dict) -> str:
 LABEL_WIDTH = 20  # 표의 선택지 열 폭 (표시 칸)
 
 
-def render(options: list[str], resp: dict, mode: str, fmt: str = "line") -> str:
+def render(options: list[str], resp: dict, mode: str, fmt: str = "line", recommended: int | None = None) -> str:
     """line: 한 줄. 데스크톱 앱은 systemMessage의 줄마다 접두어("Stop says:")를 붙여서 여러 줄 표가 흐트러진다 (research §4.2).
-    table: 고정폭 여러 줄 표 (Claude Code CLI). 줄바꿈 없이 읽히도록 한 행을 70칸 안으로 둔다."""
+    table: 고정폭 여러 줄 표 (Claude Code CLI). 줄바꿈 없이 읽히도록 한 행을 70칸 안으로 둔다.
+    recommended: 에이전트 문구에 있던 추천 번호(코드가 파싱). 종합 최고와 다르거나 자체 경고가 있으면 ⚠추천 재검토를 덧붙인다."""
     a = resp["answers"]
     probs = a["best_match"]["probabilities"]
     tag = "[가짜 점수] " if mode == "fake" else ""
     scores = composite(len(options), a)
     best = max(range(len(scores)), key=lambda i: scores[i][0]) + 1 if scores else 0
+    tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
+    note = recommend_warning(recommended, scores, probs, best)
+    if note:
+        tail += f" · {note}"
     if fmt == "table":
         lines = [f"{tag}Jev 선택지 점검 (확률, 판정이 아님 · 종합 = 부합 비율 × 범위 × 되돌림)",
                  f" #  {_cell('선택지', LABEL_WIDTH)}  부합  범위  되돌림  종합"]
@@ -293,13 +333,11 @@ def render(options: list[str], resp: dict, mode: str, fmt: str = "line") -> str:
             n = i + 1
             lines.append(f" {n}  {_cell(_short(o, 48), LABEL_WIDTH)}  {probs.get(str(n), 0):.2f}  {a[f'in_scope_{n}']['noul']:.2f}  "
                          f"{a[f'reversible_{n}']['noul']:.2f}    {s:.2f}" + "".join(f"  ⚠{w}" for w in warn))
-        tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
         lines.append(f"종합 최고 {best}{tail}")
         return "\n".join(lines)
     parts = [f"{i + 1} {_short(o)} {probs.get(str(i + 1), 0):.2f}/{a[f'in_scope_{i + 1}']['noul']:.2f}/{a[f'reversible_{i + 1}']['noul']:.2f}"
              f" 종합 {s:.2f}" + "".join(f" ⚠{w}" for w in warn)
              for i, (o, (s, warn)) in enumerate(zip(options, scores))]
-    tail = f" · 해당 없음 {probs['none']:.2f}" if probs.get("none", 0) >= 0.3 else ""
     return (f"{tag}Jev 선택지 점검 (요청 부합/범위 안/되돌리기 쉬움 → 종합, 판정이 아님): " + " · ".join(parts)
             + f" · 종합 최고 {best}" + tail)
 
@@ -377,23 +415,23 @@ def handle(payload: dict, env: dict) -> dict | None:
         found = parse_options(payload.get("last_assistant_message") or "")
         if not found:
             return None
-        options, context = found
+        options, context, recommended = found
         req = build_request(options, user_request, context)
         log_request(req, event, env)
         resp = score(req, mode, env)
-        return {"systemMessage": render(options, resp, mode, display_format(env))} if resp else None
+        return {"systemMessage": render(options, resp, mode, display_format(env), recommended)} if resp else None
     if event == "PreToolUse" and payload.get("tool_name") == "AskUserQuestion":
         ti = payload.get("tool_input") or {}
         per_q, msgs = [], []
         fmt = display_format(env)
-        for question, options in ask_user_options(ti):
+        for question, options, recommended in ask_user_options(ti):
             req = build_request(options, user_request, question)
             log_request(req, event, env)
             resp = score(req, mode, env)
             if not resp:
                 return None
             per_q.append({"answers": resp["answers"], "fake": mode == "fake"})
-            msgs.append(render(options, resp, mode, fmt))
+            msgs.append(render(options, resp, mode, fmt, recommended))
         if not per_q:
             return None
         out: dict = {"systemMessage": ("\n\n" if fmt == "table" else "\n").join(msgs)}
