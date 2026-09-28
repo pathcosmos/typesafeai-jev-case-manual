@@ -1,11 +1,11 @@
-> 원본: `pathcosmos/commonsense` 저장소 `docs/jev-case.md` · 브랜치 `jev/apply-20260927` · 커밋 `6d5c8cb` · 로컬 경로 `/Users/lanco/taketimes/commonsense`
+> 원본: 외부 프로젝트(비공개 저장소) `docs/jev-case.md` 사본. 저장소 이름·로컬 경로·커밋 해시는 비공개 정보라 생략했다.
 > 이 사본에는 비밀 정보, 운영 데이터, 표본 원문을 넣지 않았다.
 
 # Case: commonsense-api (feedback classification)
 
 | 항목 | 값 |
 | --- | --- |
-| 프로젝트 / 저장소 | commonsense / `pathcosmos/commonsense` (`server/api`) |
+| 프로젝트 / 저장소 | commonsense / 비공개 저장소 (`server/api`) |
 | 스택 | TypeScript Cloudflare Worker (D1, Workers AI, Vectorize), vitest → SDK: JS `@typesafe-ai/sdk@0.6.0` |
 | 도메인 | LLM 프로덕션 (분류 파이프라인의 게이트 신호) ([patterns/domain-map](../patterns/domain-map.md)) |
 | 입력 언어 | 영어 (탐지: 한글 비율 0). 한국어 슬라이스는 해당 없음 |

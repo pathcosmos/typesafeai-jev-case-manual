@@ -1,6 +1,6 @@
 # AGENTS.md — Jev(TypeSafe) 자동 적용 킷: 에이전트 진입점
 
-> 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual (private) · 이 머신의 클론: `/Users/lanco/taketimes/typesafeai-jev-case-manual`
+> 킷 저장소: https://github.com/pathcosmos/typesafeai-jev-case-manual · 이 머신의 클론: `/path/to/typesafeai-jev-case-manual` (각자의 클론 위치로 바꾼다)
 > kit 0.1.26 · 기준 모델 `jev-1.13.0` · Python SDK `typesafe-sdk` 0.7.1 · JS SDK `@typesafe-ai/sdk` 0.6.0 · 확인일 2026-09-25
 
 > **이 저장소 자체를 유지보수하는 에이전트**는 이 문서가 아니라 [CLAUDE.md](CLAUDE.md)(작성 규칙과 현재 상태)를 따른다. 이 문서는 **다른 프로젝트에서 이 킷을 쓰는 쪽**을 위한 것이다.
@@ -36,7 +36,7 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 ```markdown
 ## TypeSafe / Jev
 TypeSafe Jev 적용, 도입 검토, 질문 설계, 리뷰 요청을 받으면
-KIT=/Users/lanco/taketimes/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 읽고,
+KIT=/path/to/typesafeai-jev-case-manual 의 `AGENTS.md`를 먼저 읽고,
 `KIT/kit/procedure.md` 절차를 그대로 따른다. (승인 전 파일 수정 금지, 새 브랜치에서만 적용, push 금지)
 ```
 

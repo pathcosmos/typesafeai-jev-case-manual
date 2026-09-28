@@ -62,7 +62,7 @@
 | 프로젝트 | 스택 | 결과 | 핵심 판단 | 비용 |
 | --- | --- | --- | --- | --- |
 | `dynamic-agents` | TS, pnpm, Hono, React, `node:test` (기준선: 420개 테스트 통과, 타입 검사 통과) | **채택 1** · 보류 3 · 기각 다수. 4단계 승인 요청에서 정지 | gate 단계의 yes/no/unsure 판단을 Noul 3개로 분해하고 기본 off/shadow로 둠. 이미 있는 사람 응답 기록(`settleGateQuestions`, `by: 'user'`)을 평가셋 원천으로 제안. **새 제3자로의 외부 전송을 별도 승인 항목으로** 분리 | $2.85 |
-| `team-log` | npm workspaces, Hono on Workers, React 19, D1 | **채택 0** (정상 종료). 기각 4 · 보류 3 | 대체할 "LLM + 파싱"이나 의미 판정 휴리스틱이 없다. 한국어 검색 누락은 FTS 토크나이저 문제라 rerank로는 고칠 수 없다고 진단. 회의록 줄 태깅(Noul)을 새 기능 후보로 보류 | $1.43 |
+| 파일럿 프로젝트 B (비공개) | npm workspaces, Hono on Workers, React 19, D1 | **채택 0** (정상 종료). 기각 4 · 보류 3 | 대체할 "LLM + 파싱"이나 의미 판정 휴리스틱이 없다. 한국어 검색 누락은 FTS 토크나이저 문제라 rerank로는 고칠 수 없다고 진단. 회의록 줄 태깅(Noul)을 새 기능 후보로 보류 | $1.43 |
 
 두 클론 모두 `git status`가 깨끗하고 브랜치는 `main` 하나였다.
 
@@ -70,7 +70,7 @@
 
 | # | 발견 | 반영 |
 | --- | --- | --- |
-| 9 | **detect의 사각지대**: SDK 없이 자체 provider 계층(raw `fetch`, CLI 하위 프로세스)이나 플랫폼 바인딩(Cloudflare Workers AI)으로 모델을 부르면 "LLM 0건"이 나왔다. 에이전트가 직접 추적해서 보완했지만 탐지가 놓친 것이다 | detect 0.2.0: `http`/`cli`/`platform` 종류 추가, 구조화 출력 요청을 파싱 신호로 추가, `in_test` 표시. `dynamic-agents` 0 → 10개 파일(provider 4개 모두), `team-log` 0 → 1(Whisper), `waypath` 0 → 1(Gemini). `'llm'` enum 오탐은 테스트로 막음 (detect 테스트 16개) |
+| 9 | **detect의 사각지대**: SDK 없이 자체 provider 계층(raw `fetch`, CLI 하위 프로세스)이나 플랫폼 바인딩(Cloudflare Workers AI)으로 모델을 부르면 "LLM 0건"이 나왔다. 에이전트가 직접 추적해서 보완했지만 탐지가 놓친 것이다 | detect 0.2.0: `http`/`cli`/`platform` 종류 추가, 구조화 출력 요청을 파싱 신호로 추가, `in_test` 표시. `dynamic-agents` 0 → 10개 파일(provider 4개 모두), 파일럿 프로젝트 B 0 → 1(Whisper), 파일럿 프로젝트 C 0 → 1(Gemini). `'llm'` enum 오탐은 테스트로 막음 (detect 테스트 16개) |
 | 10 | detect는 전송 지점만 찾고, 그 계층을 부르는 도메인 호출부는 찾지 못한다 | procedure 1단계: provider 공개 함수에서 호출부를 거꾸로 추적하도록 명시. detect README 한계에 기록 |
 
 ## 실제 적용: dynamic-agents 원본 (8단계, 2026-09-25 · kit 0.1.7)

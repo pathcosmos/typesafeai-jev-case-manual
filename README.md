@@ -17,6 +17,20 @@ TypeSafe AI의 System One 모델 **Jev**(Choice / Score / Noul 타입 판단)를
 | GitHub 인증 | `gh auth login` (저장소가 private이라 필수) |
 | TypeSafe API 키 | 선택지 점검 hook을 `jev` 모드로 켜거나 `--live`/측정을 쓸 때만 필요. 서버 측 기기에만 둔다 |
 
+### TypeSafe API 키 발급
+
+Jev를 실제로 호출하는 모든 경로(선택지 hook `jev` 모드, `install.sh doctor --live`, `kit/measure/`)에 필요하다. 스킬 `/jev:apply`로 설계·후보 선정만 하는 단계에는 필요 없다.
+
+1. https://console.typesafe.ai/keys 에서 키를 발급한다.
+2. 키는 **서버 측 기기에만** 둔다 (브라우저·모바일 앱에 넣지 않는다). 아래 설치기가 저장하는 곳은 `~/.config/jev/env` (권한 600)의 `TYPESAFE_API_KEY`다.
+3. 설치기에 키를 넘기는 방법 셋 중 하나를 쓴다:
+   - `--options jev`만 주면 설치기가 터미널에서 직접 물어본다 (입력은 화면에 표시되지 않는다).
+   - `--key-env-file PATH`: 이미 `TYPESAFE_API_KEY=...`가 든 dotenv 파일을 가리킨다 (키를 복사하지 않는다).
+   - `--key-stdin`: 키를 표준입력 첫 줄로 준다 (자동화·CI용).
+4. 킷 저장소 자체를 개발할 때(scaffold 테스트, `kit/test.sh`)는 키가 필요 없다. `TYPESAFE_API_KEY`를 비운 상태로 돌아가게 만들어져 있다.
+
+SDK나 직접 호출 코드에서 쓸 때는 `TYPESAFE_API_KEY` 환경변수를 그대로 읽는다 ([reference/12-sdk-python](reference/12-sdk-python.md), [reference/13-sdk-javascript](reference/13-sdk-javascript.md), [reference/11-http-api](reference/11-http-api.md)).
+
 ### 방법 A: 저장소를 받아서 설치 (권장)
 
 ```bash
