@@ -86,7 +86,7 @@ hook 설정은 세션 시작 때 읽힌다. 설정을 바꾼 뒤에는 새 세�
 | --- | --- |
 | PreToolUse(AskUserQuestion) | ✅ 실행 (481ms, 첫 실행). 도구 입력은 수정된 설명으로 바뀜 (`toolUseResult`) |
 | PreToolUse `systemMessage` | ✅ 기록됨. 화면에서는 **"Claude Code 알림"**(알림)으로 표시되는 것으로 보인다 (사용자 붙여넣기 기준) |
-| Stop `systemMessage` | ✅ 대화 흐름에 표시. 단 **줄마다 `Stop says:` 접두어**가 붙어 여러 줄 표가 흐트러짐 → 표시를 **한 줄 형식**으로 바꿨다 (kit 0.1.16). kit 0.1.27부터 CLI(`CLAUDE_CODE_ENTRYPOINT=cli`)에서만 고정폭 표를 다시 쓰고, 그 밖은 한 줄을 유지한다 (`JEV_OPTIONS_FORMAT`). 데스크톱 앱 세션 기록의 `entrypoint`는 `claude-desktop`(2026-09-27 확인)이라 한 줄로 남는다 |
+| Stop `systemMessage` | ✅ 대화 흐름에 표시. 단 **줄마다 `Stop says:` 접두어**가 붙어 여러 줄 표가 흐트러짐 → 표시를 **한 줄 형식**으로 바꿨다 (kit 0.1.16). kit 0.1.27부터 Claude Code CLI(`CLAUDE_CODE_ENTRYPOINT=cli`)에서 고정폭 표를 다시 쓴다. kit 0.1.34부터 Codex hook 입력(`turn_id`)도 표로 만든다. 데스크톱 앱 세션 기록의 `entrypoint`는 `claude-desktop`(2026-09-27 확인)이라 한 줄로 남는다 |
 | 선택지 설명 앞 점수의 화면 표시 | ❌ **대화상자에 보이지 않았다** (사용자 확인). 데스크톱 대화상자는 hook이 바꾼 입력이 아니라 원래 입력으로 그려지는 것으로 보인다. 대화상자 경로에서 점수를 보는 곳은 `systemMessage` 알림뿐이다 |
 
 ## 4.3 Codex 실측 (2026-09-26, Codex CLI 0.154, 실제 Jev)
