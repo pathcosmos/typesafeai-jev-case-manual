@@ -7,8 +7,13 @@
   "plugins": [
     {
       "name": "jev",
-      "description": "Detect the current project and apply TypeSafe Jev where it fits (/jev:apply).",
+      "description": "Detect the current project and apply TypeSafe Jev where it fits (/jev:apply). Includes choice scoring hook.",
       "source": "./"
+    },
+    {
+      "name": "jev-options-only",
+      "description": "TypeSafe Jev choice scoring for agent decision visualization (hook only, no /jev:apply skill).",
+      "source": "./plugin-options-only/"
     }
   ]
 }

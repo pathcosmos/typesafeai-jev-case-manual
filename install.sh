@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # jev-kit 설치: 킷을 받아서(또는 갱신해서) Claude Code 플러그인, 선택지 hook, Codex hook을 연결한다.
-#   gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options jev   # 처음 설치 (private 저장소. 키는 화면에 표시되지 않게 입력)
+#   gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options jev   # 전체 설치 (private 저장소. 키는 화면에 표시되지 않게 입력)
+#   gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accept: application/vnd.github.raw" | bash -s -- --options-only --options jev  # 선택지 hook만 (스킬 제외)
 #   ./install.sh doctor [--live]                                    # 상태 점검
 #   ./install.sh uninstall [--purge]                                # 끄기 / 전체 제거
 # 환경변수: JEV_KIT_DIR (기본 ~/.local/share/jev-kit), JEV_KIT_REPO (기본 GitHub 저장소)
