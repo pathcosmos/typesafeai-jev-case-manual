@@ -2,10 +2,10 @@
 """jev-kit 설치기: 이 킷을 다른 기기의 Claude Code와 Codex에 연결한다 (install.sh가 부른다).
 
 사용:
-  python3 kit/install/jev_install.py [install] [--options off|fake|jev] [--kit-dir DIR]
+  python3 kit/install/jev_install.py [install] [--options off|fake|jev] [--kit-dir DIR] [--options-only]
                                      [--key-env-file PATH | --key-stdin] [--no-claude] [--no-codex]
-  python3 kit/install/jev_install.py doctor [--live]
-  python3 kit/install/jev_install.py uninstall [--purge]
+  python3 kit/install/jev_install.py doctor [--options-only] [--live]
+  python3 kit/install/jev_install.py uninstall [--options-only] [--purge]
 
 하는 일 (여러 번 실행해도 결과가 같다. 고치는 설정 파일은 먼저 *.bak-<시각>으로 백업한다):
 - ~/.config/jev/env (권한 600): 선택지 hook 모드 JEV_OPTIONS와 TYPESAFE_API_KEY (또는 키가 든 dotenv 경로 JEV_OPTIONS_ENV_FILE), 사용자가 넣은 표시 형식 JEV_OPTIONS_FORMAT은 유지.
