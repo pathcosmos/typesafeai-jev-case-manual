@@ -1,0 +1,15 @@
+{
+  "name": "jev-options-only",
+  "version": "0.1.33",
+  "description": "TypeSafe Jev choice scoring for agent decision visualization. Shows request match / scope safety / reversibility scores for each choice (hook only, no apply skill).",
+  "author": {
+    "name": "lanco"
+  },
+  "repository": "https://github.com/pathcosmos/typesafeai-jev-case-manual",
+  "keywords": [
+    "typesafe",
+    "jev",
+    "choice-scoring",
+    "decision-visualization"
+  ]
+}

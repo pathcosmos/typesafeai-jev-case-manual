@@ -2,10 +2,10 @@
 """jev-kit 설치기: 이 킷을 다른 기기의 Claude Code와 Codex에 연결한다 (install.sh가 부른다).
 
 사용:
-  python3 kit/install/jev_install.py [install] [--options off|fake|jev] [--kit-dir DIR]
+  python3 kit/install/jev_install.py [install] [--options off|fake|jev] [--kit-dir DIR] [--options-only]
                                      [--key-env-file PATH | --key-stdin] [--no-claude] [--no-codex]
-  python3 kit/install/jev_install.py doctor [--live]
-  python3 kit/install/jev_install.py uninstall [--purge]
+  python3 kit/install/jev_install.py doctor [--options-only] [--live]
+  python3 kit/install/jev_install.py uninstall [--options-only] [--purge]
 
 하는 일 (여러 번 실행해도 결과가 같다. 고치는 설정 파일은 먼저 *.bak-<시각>으로 백업한다):
 - ~/.config/jev/env (권한 600): 선택지 hook 모드 JEV_OPTIONS와 TYPESAFE_API_KEY (또는 키가 든 dotenv 경로 JEV_OPTIONS_ENV_FILE), 사용자가 넣은 표시 형식 JEV_OPTIONS_FORMAT은 유지.
@@ -34,15 +34,17 @@ from pathlib import Path
 HOOK_MARK = "kit/options/jev_options.py"
 MARKETPLACE = "jev-kit"
 PLUGIN = "jev@jev-kit"
+PLUGIN_OPTIONS_ONLY = "jev-options-only@jev-kit"
 CONFIG_KEYS = ("JEV_OPTIONS", "TYPESAFE_API_KEY", "JEV_OPTIONS_ENV_FILE", "JEV_OPTIONS_FORMAT")
 KIT_DEFAULT = Path(__file__).resolve().parents[2]
 
 
 class Ctx:
-    def __init__(self, home: Path, kit: Path):
+    def __init__(self, home: Path, kit: Path, options_only: bool = False):
         self.home, self.kit = home, kit
         self.stamp = dt.datetime.now().strftime("%Y%m%d-%H%M%S")
         self.problems: list[str] = []
+        self.plugin = PLUGIN_OPTIONS_ONLY if options_only else PLUGIN
 
     @property
     def config(self) -> Path:
@@ -188,12 +190,12 @@ def claude_step(ctx: Ctx):
         plugins = json.loads(run(["claude", "plugin", "list", "--json"]).stdout or "[]")
     except ValueError:
         plugins = []
-    installed = any((p.get("id") or p.get("name")) == PLUGIN for p in plugins)
-    r = run(["claude", "plugin", "update" if installed else "install", PLUGIN])
+    installed = any((p.get("id") or p.get("name")) == ctx.plugin for p in plugins)
+    r = run(["claude", "plugin", "update" if installed else "install", ctx.plugin])
     if r.returncode != 0:
         ctx.fail(f"플러그인 {'갱신' if installed else '설치'} 실패: {r.stderr.strip()[-300:]}")
         return
-    ctx.say(f"  플러그인 {PLUGIN} {'갱신' if installed else '설치'} 완료 (새 세션부터 적용)")
+    ctx.say(f"  플러그인 {ctx.plugin} {'갱신' if installed else '설치'} 완료 (새 세션부터 적용)")
 
 
 # ---------------- Codex ----------------
@@ -247,17 +249,18 @@ def codex_step(ctx: Ctx):
             return
         ctx.say(f"  Codex marketplace {MARKETPLACE} 등록: {ctx.kit}")
     was = codex_plugin_installed()
-    r = run(["codex", "plugin", "add", PLUGIN])  # 이미 있으면 현재 킷 버전으로 다시 복사한다
+    r = run(["codex", "plugin", "add", ctx.plugin])  # 이미 있으면 현재 킷 버전으로 다시 복사한다
     if r.returncode != 0:
         ctx.fail(f"Codex 플러그인 설치 실패: {(r.stderr or r.stdout).strip()[-300:]}")
         return
-    ctx.say(f"  Codex 플러그인 {PLUGIN} {'갱신' if was else '설치'} 완료")
-    ctx.say("  ⚠ 처음 설치했거나 hook 정의(hooks/hooks.json)가 바뀌었으면 Codex CLI의 /hooks에서 jev@jev-kit hook을 신뢰(trust)해야 실행된다")
+    ctx.say(f"  Codex 플러그인 {ctx.plugin} {'갱신' if was else '설치'} 완료")
+    ctx.say("  ⚠ 처음 설치했거나 hook 정의(hooks/hooks.json)가 바뀌었으면 Codex CLI의 /hooks에서 jev-options-only@jev-kit 또는 jev@jev-kit hook을 신뢰(trust)해야 실행된다")
 
 
 # ---------------- 명령 ----------------
 def cmd_install(ctx: Ctx, a) -> int:
-    ctx.say(f"jev-kit 설치: 킷 {ctx.kit}")
+    mode_label = "선택지 hook만" if ctx.plugin == PLUGIN_OPTIONS_ONLY else "전체"
+    ctx.say(f"jev-kit 설치: 킷 {ctx.kit} ({mode_label})")
     if sys.version_info < (3, 10):
         ctx.fail(f"Python 3.10 이상이 필요하다 (지금 {sys.version.split()[0]})")
         return 1
@@ -311,17 +314,17 @@ def cmd_doctor(ctx: Ctx, a) -> int:
             plugins = json.loads(run(["claude", "plugin", "list", "--json"]).stdout or "[]")
         except ValueError:
             plugins = []
-        p = next((p for p in plugins if (p.get("id") or p.get("name")) == PLUGIN), None)
-        line(p is not None, f"Claude 플러그인 {PLUGIN}: {p.get('version') if p else '설치 안 됨'}")
+        p = next((p for p in plugins if (p.get("id") or p.get("name")) == ctx.plugin), None)
+        line(p is not None, f"Claude 플러그인 {ctx.plugin}: {p.get('version') if p else '설치 안 됨'}")
         s = load_json(ctx.home / ".claude" / "settings.json")
         legacy = strip_our_hooks(json.loads(json.dumps(s.get("hooks") or {})))
         line(legacy == 0, f"Claude 예전 수동 hook: {legacy}개" + (" (install을 다시 실행하면 정리된다)" if legacy else ""))
     else:
         print("- Claude Code 없음")
     if shutil.which("codex"):
-        line(codex_plugin_installed(), f"Codex 플러그인 {PLUGIN}: {'설치됨' if codex_plugin_installed() else '설치 안 됨'}")
+        line(codex_plugin_installed(), f"Codex 플러그인 {ctx.plugin}: {'설치됨' if codex_plugin_installed() else '설치 안 됨'}")
         cfg = ctx.home / ".codex" / "config.toml"
-        trusted = [e for e in ("session_start", "stop", "pre_tool_use") if cfg.exists() and f'"{PLUGIN}:hooks/hooks.json:{e}:0:0"' in cfg.read_text(encoding="utf-8")]
+        trusted = [e for e in ("session_start", "stop", "pre_tool_use") if cfg.exists() and f'"{ctx.plugin}:hooks/hooks.json:{e}:0:0"' in cfg.read_text(encoding="utf-8")]
         line(mode == "off" or {"session_start", "stop"} <= set(trusted), f"Codex 플러그인 hook 신뢰: {trusted or '없음'} (Codex CLI /hooks에서 신뢰)")
         legacy = sum(HOOK_MARK in h.get("command", "") for gs in load_json(ctx.home / ".codex" / "hooks.json").get("hooks", {}).values() for g in gs for h in g.get("hooks", []))
         line(legacy == 0, f"Codex 예전 hooks.json 항목: {legacy}개" + (" (install을 다시 실행하면 정리된다)" if legacy else ""))
@@ -354,13 +357,13 @@ def cmd_uninstall(ctx: Ctx, a) -> int:
             save_json(settings, d)
     if a.purge:
         if shutil.which("claude"):
-            run(["claude", "plugin", "uninstall", PLUGIN])
+            run(["claude", "plugin", "uninstall", ctx.plugin])
             run(["claude", "plugin", "marketplace", "remove", MARKETPLACE])
-            ctx.say(f"• Claude 플러그인 {PLUGIN}와 marketplace {MARKETPLACE} 제거")
+            ctx.say(f"• Claude 플러그인 {ctx.plugin}와 marketplace {MARKETPLACE} 제거")
         if shutil.which("codex"):
-            run(["codex", "plugin", "remove", PLUGIN])
+            run(["codex", "plugin", "remove", ctx.plugin])
             run(["codex", "plugin", "marketplace", "remove", MARKETPLACE])
-            ctx.say(f"• Codex 플러그인 {PLUGIN}와 marketplace {MARKETPLACE} 제거")
+            ctx.say(f"• Codex 플러그인 {ctx.plugin}와 marketplace {MARKETPLACE} 제거")
         if ctx.config.exists():
             ctx.config.unlink()
             ctx.say(f"• {ctx.config} 삭제 (키 포함)")
@@ -372,6 +375,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("command", nargs="?", default="install", choices=["install", "doctor", "uninstall"])
     ap.add_argument("--options", choices=["off", "fake", "jev"], help="선택지 hook 모드 (없으면 기존 값, 처음이면 off)")
+    ap.add_argument("--options-only", action="store_true", help="선택지 hook만 설치 (jev@jev-kit 대신 jev-options-only@jev-kit). /jev:apply 스킬 제외")
     ap.add_argument("--kit-dir", type=Path, default=KIT_DEFAULT)
     ap.add_argument("--key-env-file", help="키를 복사하지 않고 이 dotenv 파일의 TYPESAFE_API_KEY를 읽게 한다")
     ap.add_argument("--key-stdin", action="store_true", help="키를 표준입력 첫 줄에서 읽는다 (자동화용)")
@@ -381,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--purge", action="store_true", help="uninstall: 플러그인과 설정 파일(키 포함)까지 지운다")
     ap.add_argument("--home", type=Path, default=Path.home(), help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
-    ctx = Ctx(a.home, a.kit_dir.resolve())
+    ctx = Ctx(a.home, a.kit_dir.resolve(), options_only=a.options_only)
     return {"install": cmd_install, "doctor": cmd_doctor, "uninstall": cmd_uninstall}[a.command](ctx, a)
 
 
