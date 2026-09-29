@@ -15,8 +15,8 @@ Claude Code와 Codex의 hook 명령으로 쓴다. stdin으로 hook payload(JSON)
                        fake: 외부로 아무것도 보내지 않고 결정적인 가짜 점수를 쓴다
                        jev:  TYPESAFE_API_KEY가 있을 때만 api.typesafe.ai에 요청 1건을 보낸다 (요청 텍스트, 선택지 앞 문맥, 선택지).
                              키가 없거나 실패하면 아무것도 표시하지 않는다. 시간 상한 JEV_OPTIONS_TIMEOUT(초, 기본 4)
-  JEV_OPTIONS_FORMAT   auto(기본) | table | line. auto는 Claude Code CLI(CLAUDE_CODE_ENTRYPOINT=cli)에서만 여러 줄 표,
-                       그 밖(데스크톱 앱, Codex)은 한 줄. 데스크톱 앱은 줄마다 "Stop says:"를 붙여 표가 흐트러진다 (research §4.2)
+  JEV_OPTIONS_FORMAT   auto(기본) | table | line. auto는 Claude Code CLI와 Codex(turn_id)에서 여러 줄 표,
+                       그 밖(데스크톱 앱 등)은 한 줄. 데스크톱 앱은 줄마다 "Stop says:"를 붙여 표가 흐트러진다 (research §4.2)
   JEV_OPTIONS_REWRITE  1이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다 (기본 끔, 화면 미반영 확인, 권장하지 않음)
   JEV_OPTIONS_ENV_FILE TYPESAFE_API_KEY가 환경에 없을 때 이 dotenv 파일에서 그 한 줄만 읽는다 (키를 hook 설정에 복사하지 않기 위해)
   JEV_OPTIONS_LOG      경로를 주면 만든 Jev 요청(state 포함)을 로컬 JSONL로 남긴다 (검토용, 외부 전송 없음)
@@ -307,12 +307,12 @@ def _cell(text: str, width: int) -> str:
     return text + " " * (width - _width(text))
 
 
-def display_format(env: dict) -> str:
-    """table | line. auto는 확인한 표면(Claude Code CLI)에서만 표를 쓴다."""
+def display_format(env: dict, payload: dict | None = None) -> str:
+    """table | line. auto는 Claude Code CLI와 Codex 전용 hook 입력(turn_id)에서 표를 쓴다."""
     fmt = (env.get("JEV_OPTIONS_FORMAT") or "auto").strip().lower()
     if fmt in ("table", "line"):
         return fmt
-    return "table" if env.get("CLAUDE_CODE_ENTRYPOINT") == "cli" else "line"
+    return "table" if env.get("CLAUDE_CODE_ENTRYPOINT") == "cli" or (payload or {}).get("turn_id") is not None else "line"
 
 
 LABEL_WIDTH = 20  # 표의 선택지 열 폭 (표시 칸)
@@ -424,11 +424,11 @@ def handle(payload: dict, env: dict) -> dict | None:
         req = build_request(options, user_request, context)
         log_request(req, event, env)
         resp = score(req, mode, env)
-        return {"systemMessage": render(options, resp, mode, display_format(env), recommended)} if resp else None
+        return {"systemMessage": render(options, resp, mode, display_format(env, payload), recommended)} if resp else None
     if event == "PreToolUse" and payload.get("tool_name") == "AskUserQuestion":
         ti = payload.get("tool_input") or {}
         per_q, msgs = [], []
-        fmt = display_format(env)
+        fmt = display_format(env, payload)
         for question, options, recommended in ask_user_options(ti):
             req = build_request(options, user_request, question)
             log_request(req, event, env)

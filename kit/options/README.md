@@ -8,7 +8,7 @@
 
 (실제 출력. 값은 입력 해시로 만든 가짜라 의미가 없다.)
 
-Claude Code CLI에서는 같은 내용을 고정폭 표로 보여 준다 (`JEV_OPTIONS_FORMAT=auto`, 기본). 한글 선택지는 표시 폭(전각 2칸)으로 맞추고 20칸에서 `..`으로 자른다.
+Claude Code CLI와 Codex에서는 같은 내용을 고정폭 표로 만든다 (`JEV_OPTIONS_FORMAT=auto`, 기본). Codex 화면에서 줄바꿈과 열 정렬이 그대로 보이는지는 대화형 UI에서 확인이 필요하다. 한글 선택지는 표시 폭(전각 2칸)으로 맞추고 20칸에서 `..`으로 자른다.
 
 ```text
 Jev 선택지 점검 (확률, 판정이 아님 · 종합 = 부합 비율 × 범위 × 되돌림)
@@ -94,7 +94,7 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 | 변수 | 값 |
 | --- | --- |
 | `JEV_OPTIONS` | `off`(기본) · `fake` · `jev` (키 필요, 외부 전송) |
-| `JEV_OPTIONS_FORMAT` | `auto`(기본) · `table` · `line`. `auto`는 Claude Code CLI(`CLAUDE_CODE_ENTRYPOINT=cli`)에서만 여러 줄 표, 그 밖(데스크톱 앱, Codex, 확인하지 않은 표면)은 한 줄. 데스크톱 앱은 줄마다 `Stop says:`를 붙여 표가 흐트러지므로 한 줄이다 (research §4.2). 데스크톱 앱 세션 기록의 `entrypoint`는 `claude-desktop`이라 `auto`는 한 줄을 고른다. 그래도 표가 흐트러지는 표면이 있으면 `~/.config/jev/env`에 `JEV_OPTIONS_FORMAT=line`을 넣는다 |
+| `JEV_OPTIONS_FORMAT` | `auto`(기본) · `table` · `line`. `auto`는 Claude Code CLI(`CLAUDE_CODE_ENTRYPOINT=cli`)와 Codex hook 입력(`turn_id`)에서 여러 줄 표, 그 밖(데스크톱 앱, 확인하지 않은 표면)은 한 줄. 데스크톱 앱은 줄마다 `Stop says:`를 붙여 표가 흐트러지므로 한 줄이다 (research §4.2). 데스크톱 앱 세션 기록의 `entrypoint`는 `claude-desktop`이라 `auto`는 한 줄을 고른다. 표가 흐트러지는 표면이 있으면 `~/.config/jev/env`에 `JEV_OPTIONS_FORMAT=line`을 넣는다 |
 | `JEV_OPTIONS_REWRITE` | `1`이면 AskUserQuestion 선택지 설명 앞에 점수를 붙인다. **권장하지 않는다**: 도구 입력은 바뀌지만 데스크톱 앱 대화상자 화면에는 보이지 않았다 (CLI 화면은 미확인) |
 | `JEV_OPTIONS_ENV_FILE` | `TYPESAFE_API_KEY`가 환경에 없을 때 이 dotenv 파일에서 **그 한 줄만** 읽는다. 키를 hook 설정에 복사하지 않고 한 곳(예: 프로젝트 `.env`)에만 둘 때 쓴다 |
 | `JEV_OPTIONS_LOG` | 만든 요청(state 포함)을 쓸 로컬 JSONL 경로. 무엇이 보내질지 검토용 |
@@ -119,7 +119,7 @@ gh api repos/pathcosmos/typesafeai-jev-case-manual/contents/install.sh -H "Accep
 - **데스크톱 앱 Code 탭 (2026-09-25)**: 두 hook이 실행됐다. 대화상자 경로의 `systemMessage`는 "Claude Code 알림"으로, Stop의 `systemMessage`는 대화 흐름에 줄마다 `Stop says:`가 붙어 표시돼서 표시를 한 줄 형식으로 바꿨다. 선택지 설명 수정(`JEV_OPTIONS_REWRITE`)은 **대화상자 화면에 보이지 않았다** ([research §4.2](../../research/agent-choice-scoring.md#42-데스크톱-앱-실측-2026-09-25)).
 - **실제 Jev (2026-09-25)**: 합성 선택지로 확인했다. 대화 기록에 사용자 요청이 있으면 뜻이 맞게 나온다: "실측 결과 정리해 줘"에 "결과 기록" 0.97/0.89/0.81, "main에 강제 push" 0.00/0.07/0.36. 요청이 없으면(`(not available)`) Choice가 설계대로 "해당 없음"(0.98~1.00)을 준다. 틀린 키는 표시 없이 stderr에 `HTTP 401 (auth)`만 남는다.
 - **Codex CLI 0.154 (2026-09-26)**: 설치기가 넣은 hook 2개를 `/hooks`에서 신뢰한 뒤 `codex exec`로 확인했다. `SessionStart`가 규약을 세션 맥락에 넣었고(세션 기록에서 확인), 에이전트가 규약대로 답했다. `Stop` hook이 선택지를 잡아 요청을 만들었다 (`JEV_OPTIONS_LOG`로 확인). 헤드리스 `exec`에서는 `systemMessage`가 출력 스트림과 세션 기록에 남지 않아 **화면 표시는 대화형 TUI에서 확인해야 한다.**
+- **Codex 표 형식 (kit 0.1.34)**: Codex 전용 hook 입력 `turn_id`가 있으면 `auto`에서도 여러 줄 표를 만든다 (단위 테스트). 대화형 TUI의 실제 표시는 아직 확인하지 않았다.
 - **Codex도 플러그인 한 경로로 모았다 (kit 0.1.24):** Codex는 자체 플러그인 시스템으로 Claude 형식 marketplace를 읽고, 플러그인 hook에 `CLAUDE_PLUGIN_ROOT`를 넣어 준다. `~/.codex/hooks.json` 직접 항목을 지우고 `codex plugin add jev@jev-kit`로 설치한 뒤 `codex exec --dangerously-bypass-hook-trust`(확인용, 1회)로 돌려서 플러그인의 `SessionStart`(규약 전달)와 `Stop`(선택지 인식)이 실행되는 것을 확인했다. 평소에는 `/hooks`에서 신뢰한 뒤 쓴다.
 - **CLI `systemMessage` 표시 시점 (2026-09-27, 실제 Jev)**: `AskUserQuestion`으로 사용자에게 직접 물어 확인했다 — 선택 틀이 뜰 때 Jev 알림은 **선택한 뒤에야** 보였다. 문서에도 이 순서를 정하는 필드는 없다. 즉 대화상자 경로는 결정 전에는 아무것도 못 보여준다 (설명 수정도, 알림도) — 사후 참고용일 뿐이다 ([research §4.1.1](../../research/agent-choice-scoring.md#411-systemmessage-표시-시점-2026-09-27-claude-code-cli-실제-jev)).
 - **2턴(Stop 경로) 대안도 실패 (2026-09-27, 이 저장소의 실제 세션)**: 위 대안(번호 목록 먼저 → `Stop` hook → 재선택)을 이 저장소에서 실측했다. `Stop` hook은 정확히 실행돼 실제 Jev 점수를 계산하고 `hook_system_message`로 transcript에 기록됐지만, **화면에는 보이지 않았다** (재현 2회). 이 세션에는 같은 `Stop` 이벤트에 다른 플러그인·전역 설정의 hook이 3개 더 걸려 있다. claude-code-guide agent 조사로도 여러 hook의 화면 표시 순서·우선순위를 사용자가 조절할 수 있는 문서화된 방법은 없다는 것을 확인했다 — **jev-kit이 고칠 수 있는 문제가 아니다** ([research §4.1.2](../../research/agent-choice-scoring.md#412-2턴stop-경로-재검증--여러-stop-hook이-있는-실제-세션에서는-역시-안-보임-2026-09-27)).
-

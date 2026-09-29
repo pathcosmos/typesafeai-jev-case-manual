@@ -241,11 +241,13 @@ class RequestAndScoreTests(unittest.TestCase):
         self.assertNotIn("추천(", text)
         self.assertNotIn("재검토", text)
 
-    def test_display_format_uses_table_only_on_claude_cli(self):
+    def test_display_format_uses_table_on_claude_cli_and_codex(self):
         self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli"}), "table")
-        self.assertEqual(jo.display_format({}), "line")  # Codex, 확인하지 않은 표면
+        self.assertEqual(jo.display_format({}, {"turn_id": "t1"}), "table")
+        self.assertEqual(jo.display_format({}), "line")  # 확인하지 않은 표면
         self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "claude-desktop"}), "line")
         self.assertEqual(jo.display_format({"CLAUDE_CODE_ENTRYPOINT": "cli", "JEV_OPTIONS_FORMAT": "line"}), "line")
+        self.assertEqual(jo.display_format({"JEV_OPTIONS_FORMAT": "line"}, {"turn_id": "t1"}), "line")
         self.assertEqual(jo.display_format({"JEV_OPTIONS_FORMAT": "table"}), "table")
 
 
@@ -277,7 +279,8 @@ class HookTests(unittest.TestCase):
 
     def test_stop_codex_payload_without_transcript(self):
         out = jo.handle({"hook_event_name": "Stop", "last_assistant_message": EN, "turn_id": "t1", "stop_hook_active": False}, FAKE)
-        self.assertIn("2 Raise the timeout in th…", out["systemMessage"])
+        self.assertIn("\n #  선택지", out["systemMessage"])
+        self.assertIn("2  Raise the timeout", out["systemMessage"])
 
     def test_stop_hook_active_and_no_options_do_nothing(self):
         self.assertIsNone(jo.handle({"hook_event_name": "Stop", "last_assistant_message": KO, "stop_hook_active": True}, FAKE))
